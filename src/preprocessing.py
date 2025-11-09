@@ -161,6 +161,9 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
                    if col not in exclude_cols 
                    and df[col].dtype in [pl.Int64, pl.Int32, pl.Float64, pl.Float32]]
     
+    # Store original dtypes to restore after imputation
+    original_dtypes = {col: df[col].dtype for col in numeric_cols}
+    
     if not numeric_cols:
         print("  No numeric columns to fix")
         return df
@@ -230,6 +233,12 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     
     print("  Imputation complete!")
     
+    # Check for extreme values after imputation
+    max_val = np.nanmax(np.abs(X_imputed))
+    if max_val > 1e15:
+        print(f"  ⚠ WARNING: Detected extreme values after imputation (max: {max_val:.2e})")
+        print(f"  This might cause issues. Consider reviewing the data or imputation settings.")
+    
     # Create DataFrame with imputed values
     df_imputed = pl.DataFrame({
         col: X_imputed[:, idx] 
@@ -259,6 +268,34 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
         on="numero_de_cliente",
         how="left"
     )
+    
+    # Restore original data types (MICE converts to float64)
+    # For integer columns, round and handle overflow/NaN values
+    cast_exprs = []
+    for col in numeric_cols:
+        if col in df_202006_complete.columns:
+            original_dtype = original_dtypes[col]
+            if original_dtype in [pl.Int64, pl.Int32]:
+                # For integer columns: clip extreme values, round, fill NaN with 0, and cast
+                # Int64 range: -9223372036854775808 to 9223372036854775807
+                max_int64 = 9223372036854775807
+                min_int64 = -9223372036854775808
+                cast_exprs.append(
+                    pl.col(col)
+                    .clip(min_int64, max_int64)  # Clip to int64 range
+                    .round(0)
+                    .fill_nan(0)
+                    .cast(original_dtype, strict=False)
+                )
+            else:
+                # For float columns: just cast back
+                cast_exprs.append(pl.col(col).cast(original_dtype, strict=False))
+    
+    if cast_exprs:
+        df_202006_complete = df_202006_complete.with_columns(cast_exprs)
+    
+    # Ensure column order matches before concatenating
+    df_202006_complete = df_202006_complete.select(df.columns)
     
     # Combine back
     df_fixed = pl.concat([df_without_202006, df_202006_complete])
