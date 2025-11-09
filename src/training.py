@@ -268,30 +268,25 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     # Create objective function
     objective = create_objective_function(dtrain, df_test, test_matrix, config, n_train)
     
-    # Create or load study
+    # Create or load study (load_if_exists handles both cases)
     study_name = f"lgbm_{experimento}"
     
-    try:
-        # Try to load existing study
-        study = optuna.load_study(
-            study_name=study_name,
-            storage=db_url,
-            sampler=TPESampler(seed=config["semilla_primigenia"])
-        )
-        print(f"Loaded existing study: {len(study.trials)} trials already completed")
-    except KeyError:
-        # Create new study if it doesn't exist
-        study = optuna.create_study(
-            study_name=study_name,
-            storage=db_url,
-            direction="maximize",
-            sampler=TPESampler(seed=config["semilla_primigenia"]),
-            load_if_exists=True
-        )
+    study = optuna.create_study(
+        study_name=study_name,
+        storage=db_url,
+        direction="maximize",
+        sampler=TPESampler(seed=config["semilla_primigenia"]),
+        load_if_exists=True  # Loads if exists, creates if not
+    )
+    
+    # Check if study already had trials
+    trials_completed = len(study.trials)
+    if trials_completed > 0:
+        print(f"Loaded existing study: {trials_completed} trials already completed")
+    else:
         print(f"Created new study: {study_name}")
     
     # Calculate remaining trials
-    trials_completed = len(study.trials)
     trials_remaining = max(0, n_trials - trials_completed)
     
     if trials_remaining == 0:

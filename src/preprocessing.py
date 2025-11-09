@@ -170,12 +170,12 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     # Analyze 202006 for problematic columns
     df_202006 = df.filter(pl.col("foto_mes") == 202006)
     
-    # Find columns where >50% of values are 0 in 202006
+    # Find columns where >80% of values are 0 in 202006 (more selective)
     zero_ratios = {}
     for col in numeric_cols:
         zero_count = df_202006.filter(pl.col(col) == 0).shape[0]
         zero_ratio = zero_count / df_202006.shape[0]
-        if zero_ratio > 0.5:  # More than 50% zeros
+        if zero_ratio > 0.8:  # More than 80% zeros (was 50%)
             zero_ratios[col] = zero_ratio
     
     if not zero_ratios:
@@ -220,7 +220,7 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     # Apply MICE imputation
     print("  Running MICE imputation (this may take a few minutes)...")
     imputer = IterativeImputer(
-        max_iter=10,
+        max_iter=3,  # Reduced from 10 to 3 for faster execution
         random_state=102191,
         verbose=0,
         skip_complete=True  # Skip columns with no missing values
