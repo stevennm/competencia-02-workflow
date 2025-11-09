@@ -1,0 +1,22 @@
+2025-11-09 20:12:16,780 - INFO - Log file: logs/run_20251109_201216.log
+2025-11-09 20:12:16,780 - INFO - ======================================================================
+2025-11-09 20:12:16,781 - INFO -   LIGHTGBM WORKFLOW - 2025-11-09 20:12:16
+2025-11-09 20:12:16,781 - INFO - ======================================================================
+2025-11-09 20:12:16,781 - INFO - Experiment: seg-001
+2025-11-09 20:12:16,781 - INFO - Seed: 102191
+2025-11-09 20:12:16,781 - INFO - Loading featured data from parquet file
+2025-11-09 20:12:22,318 - INFO - Loaded featured data: 4717958 rows, 1708 columns
+2025-11-09 20:12:22,319 - INFO - ======================================================================
+2025-11-09 20:12:22,319 - INFO -   STEP 4: RANDOM FOREST LEAF FEATURES
+2025-11-09 20:12:22,319 - INFO - ======================================================================
+2025-11-09 20:12:44,654 - ERROR - ERROR: name 'os' is not defined
+2025-11-09 20:12:44,654 - ERROR - ======================================================================
+2025-11-09 20:12:44,673 - ERROR - Full traceback:
+2025-11-09 20:12:44,673 - ERROR - Traceback (most recent call last):
+  File "/home/rstevenmartins/version_jueves/workflow-jueves-python/run.py", line 123, in main
+    df = add_rf_features(df, PARAM, campos_buenos)
+  File "/home/rstevenmartins/version_jueves/workflow-jueves-python/src/rf_features.py", line 81, in add_rf_features
+    os.makedirs("output", exist_ok=True)
+    ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+

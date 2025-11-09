@@ -14,6 +14,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 import polars as pl
+import os
 
 # Import all modules
 from src.config import PARAM
@@ -120,7 +121,7 @@ def main():
         campos_buenos = [col for col in df.columns 
                         if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
-        #df = add_rf_features(df, PARAM, campos_buenos)
+        df = add_rf_features(df, PARAM, campos_buenos)
         
         # =====================================================================
         # STEP 5: PREPARE DATA FOR TRAINING

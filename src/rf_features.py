@@ -6,6 +6,7 @@ Creates binary features from Random Forest leaf predictions
 import polars as pl
 import numpy as np
 import lightgbm as lgb
+import os
 from typing import Dict, List
 from tqdm import tqdm
 

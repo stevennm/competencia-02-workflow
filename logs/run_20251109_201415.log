@@ -1,0 +1,24 @@
+2025-11-09 20:14:15,740 - INFO - Log file: logs/run_20251109_201415.log
+2025-11-09 20:14:15,740 - INFO - ======================================================================
+2025-11-09 20:14:15,740 - INFO -   LIGHTGBM WORKFLOW - 2025-11-09 20:14:15
+2025-11-09 20:14:15,740 - INFO - ======================================================================
+2025-11-09 20:14:15,740 - INFO - Experiment: seg-001
+2025-11-09 20:14:15,740 - INFO - Seed: 102191
+2025-11-09 20:14:15,740 - INFO - Loading featured data from parquet file
+2025-11-09 20:14:21,084 - INFO - Loaded featured data: 4717958 rows, 1708 columns
+2025-11-09 20:14:21,084 - INFO - ======================================================================
+2025-11-09 20:14:21,084 - INFO -   STEP 4: RANDOM FOREST LEAF FEATURES
+2025-11-09 20:14:21,084 - INFO - ======================================================================
+2025-11-09 20:15:29,435 - ERROR - ERROR: unable to append to a DataFrame of width 46 with a DataFrame of width 248
+2025-11-09 20:15:29,435 - ERROR - ======================================================================
+2025-11-09 20:15:29,450 - ERROR - Full traceback:
+2025-11-09 20:15:29,451 - ERROR - Traceback (most recent call last):
+  File "/home/rstevenmartins/version_jueves/workflow-jueves-python/run.py", line 124, in main
+    df = add_rf_features(df, PARAM, campos_buenos)
+  File "/home/rstevenmartins/version_jueves/workflow-jueves-python/src/rf_features.py", line 130, in add_rf_features
+    rf_features_df = pl.concat(all_rf_features)
+  File "/home/rstevenmartins/version_jueves/workflow-jueves-python/.venv/lib/python3.13/site-packages/polars/functions/eager.py", line 231, in concat
+    out = wrap_df(plr.concat_df(elems))
+                  ~~~~~~~~~~~~~^^^^^^^
+polars.exceptions.ShapeError: unable to append to a DataFrame of width 46 with a DataFrame of width 248
+
