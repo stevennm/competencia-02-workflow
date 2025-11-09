@@ -41,10 +41,10 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
     X_future = df_future.select(campos_buenos_valid).to_numpy()
     
     # Load all models and make predictions
-    model_files = glob("modelitos/mod_*.txt")
+    model_files = glob("output/modelitos/mod_*.txt")
     
     if len(model_files) == 0:
-        raise FileNotFoundError("No models found in modelitos/ directory!")
+        raise FileNotFoundError("No models found in output/modelitos/ directory!")
     
     print(f"Loading {len(model_files)} models...")
     
@@ -68,8 +68,9 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
     ])
     
     # Save predictions
-    print("Saving predictions to prediccion.txt...")
-    df_pred.write_csv("prediccion.txt", separator="\t")
+    os.makedirs("output", exist_ok=True)
+    print("Saving predictions to output/prediccion.txt...")
+    df_pred.write_csv("output/prediccion.txt", separator="\t")
     
     return df_pred
 
@@ -105,11 +106,11 @@ def generate_submission(df_pred: pl.DataFrame, config: Dict, n_envios: int = 110
     ])
     
     # Create kaggle directory
-    os.makedirs("kaggle", exist_ok=True)
+    os.makedirs("output/kaggle", exist_ok=True)
     
     # Generate filename
     experimento = config["experimento"]
-    submission_file = f"kaggle/KA{experimento}_{n_envios}.csv"
+    submission_file = f"output/kaggle/KA{experimento}_{n_envios}.csv"
     
     # Save submission
     print(f"Saving submission to {submission_file}...")

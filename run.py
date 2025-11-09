@@ -19,6 +19,7 @@ from src.training import (
     train_final_models
 )
 from src.scoring import score_future_data, generate_submission
+from src.gain_analysis import create_gain_curve
 
 
 def print_section(title: str):
@@ -120,6 +121,13 @@ def main():
         generate_submission(df_pred, PARAM, n_envios=11000)
         
         # =====================================================================
+        # STEP 10: GAIN CURVE ANALYSIS (if labels available)
+        # =====================================================================
+        print_section("STEP 10: GAIN CURVE ANALYSIS")
+        
+        create_gain_curve(df, df_pred, PARAM)
+        
+        # =====================================================================
         # COMPLETION
         # =====================================================================
         elapsed_time = time.time() - start_time
@@ -130,12 +138,15 @@ def main():
         print_section("WORKFLOW COMPLETED SUCCESSFULLY")
         print(f"\nTotal execution time: {hours:02d}h {minutes:02d}m {seconds:02d}s")
         print(f"Experiment: {PARAM['experimento']}")
-        print(f"\nOutput files:")
-        print(f"  - BO_log.txt (Bayesian Optimization log)")
-        print(f"  - prediccion.txt (Full predictions)")
-        print(f"  - kaggle/KA{PARAM['experimento']}_11000.csv (Submission file)")
-        print(f"  - modelitos/ (Trained models directory)")
-        print(f"  - impo_*.txt (Feature importance files)")
+        print(f"\nOutput files (in output/ directory):")
+        print(f"  - output/BO_log.txt (Bayesian Optimization log)")
+        print(f"  - output/prediccion.txt (Full predictions)")
+        print(f"  - output/kaggle/KA{PARAM['experimento']}_11000.csv (Submission file)")
+        print(f"  - output/modelitos/ (Trained models directory)")
+        print(f"  - output/impo_*.txt (Feature importance files)")
+        print(f"  - output/modelo.model (Random Forest model)")
+        print(f"  - output/analysis/gain_curve.png (Gain curve visualization)")
+        print(f"  - output/analysis/gain_by_cutoff.csv (Gain statistics)")
         
         return 0
         

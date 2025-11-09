@@ -78,7 +78,8 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     
     # Save model
     print("Saving model...")
-    modelo.save_model("modelo.model")
+    os.makedirs("output", exist_ok=True)
+    modelo.save_model("output/modelo.model")
     
     # Get unique periods
     periodos = df.select("foto_mes").unique().sort("foto_mes").to_series().to_list()

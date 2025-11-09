@@ -26,6 +26,9 @@ wheels/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Output and database files
+#output/
+#db/
 
 # IDE
 .vscode/
@@ -41,5 +44,5 @@ Thumbs.db
 # Data (optionally uncomment to ignore data files)
 # data/*.parquet
 # data/*.csv
-data/
+data/competencia_02_target.parquet
 

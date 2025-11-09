@@ -142,7 +142,7 @@ def calculate_gain_with_meseta(predictions: np.ndarray, gan_values: np.ndarray,
 
 def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame, 
                               test_matrix: np.ndarray, config: Dict,
-                              n_train: int, log_file: str = "BO_log.txt"):
+                              n_train: int, log_file: str = "output/BO_log.txt"):
     """
     Create Optuna objective function
     
@@ -162,6 +162,7 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     fixed_params["seed"] = config["semilla_primigenia"]
     
     # Initialize log file
+    os.makedirs("output", exist_ok=True)
     if not os.path.exists(log_file):
         with open(log_file, "w") as f:
             f.write("fecha\titer\tnum_iterations\tlearning_rate\tfeature_fraction\t"
@@ -221,7 +222,7 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
                 "Gain": modelo.feature_importance(importance_type="gain")
             })
             importance_df = importance_df.sort("Gain", descending=True)
-            importance_df.write_csv(f"impo_{iteration['count']}.txt", separator="\t")
+            importance_df.write_csv(f"output/impo_{iteration['count']}.txt", separator="\t")
         
         # Log to file
         timestamp = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -255,19 +256,50 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     print("="*50)
     
     n_trials = config["hipeparametertuning"]["BO_iteraciones"]
+    experimento = config["experimento"]
+    
+    # Create db directory
+    os.makedirs("db", exist_ok=True)
+    
+    # Create database URL
+    db_url = f"sqlite:///db/optuna_{experimento}.db"
+    print(f"Study database: {db_url}")
     
     # Create objective function
     objective = create_objective_function(dtrain, df_test, test_matrix, config, n_train)
     
-    # Create study
-    study = optuna.create_study(
-        direction="maximize",
-        sampler=TPESampler(seed=config["semilla_primigenia"])
-    )
+    # Create or load study
+    study_name = f"lgbm_{experimento}"
     
-    # Run optimization
-    print(f"Running {n_trials} trials...")
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+    try:
+        # Try to load existing study
+        study = optuna.load_study(
+            study_name=study_name,
+            storage=db_url,
+            sampler=TPESampler(seed=config["semilla_primigenia"])
+        )
+        print(f"Loaded existing study: {len(study.trials)} trials already completed")
+    except KeyError:
+        # Create new study if it doesn't exist
+        study = optuna.create_study(
+            study_name=study_name,
+            storage=db_url,
+            direction="maximize",
+            sampler=TPESampler(seed=config["semilla_primigenia"]),
+            load_if_exists=True
+        )
+        print(f"Created new study: {study_name}")
+    
+    # Calculate remaining trials
+    trials_completed = len(study.trials)
+    trials_remaining = max(0, n_trials - trials_completed)
+    
+    if trials_remaining == 0:
+        print(f"All {n_trials} trials already completed!")
+    else:
+        print(f"Running {trials_remaining} remaining trials (out of {n_trials} total)...")
+        # Run optimization
+        study.optimize(objective, n_trials=trials_remaining, show_progress_bar=True)
     
     # Get best parameters
     best_params = study.best_params
@@ -363,12 +395,12 @@ def train_final_models(df: pl.DataFrame, config: Dict,
     seeds = np.random.randint(100000, 1000000, size=config["train_final"]["ksemillerio"])
     
     # Create modelitos directory
-    os.makedirs("modelitos", exist_ok=True)
+    os.makedirs("output/modelitos", exist_ok=True)
     
     # Train ensemble
     print(f"Training {len(seeds)} models...")
     for idx, seed in enumerate(seeds):
-        model_file = f"modelitos/mod_{seed}.txt"
+        model_file = f"output/modelitos/mod_{seed}.txt"
         
         if os.path.exists(model_file):
             print(f"  Model {idx+1}/{len(seeds)} already exists, skipping...")
