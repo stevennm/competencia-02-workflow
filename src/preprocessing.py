@@ -194,7 +194,7 @@ def preprocess_data(file_path: str) -> pl.DataFrame:
     df = load_data(file_path)
     
     # Generate clase_ternaria
-    df = generate_clase_ternaria(df)
+    #df = generate_clase_ternaria(df)
     
     # Apply placeholder transformations
     df = eliminate_features(df)
