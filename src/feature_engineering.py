@@ -212,22 +212,25 @@ def calculate_trends_duckdb(df: pl.DataFrame, cols: List[str], ventana: int) -> 
     for col in cols:
         if col in df.columns:
             trend_exprs.append(f"""
-                REGR_SLOPE(
-                    "{col}", 
-                    ROW_NUMBER() OVER (PARTITION BY numero_de_cliente ORDER BY foto_mes)
-                ) OVER (
+                REGR_SLOPE("{col}", row_num) OVER (
                     PARTITION BY numero_de_cliente 
                     ORDER BY foto_mes 
                     ROWS BETWEEN {ventana - 1} PRECEDING AND CURRENT ROW
                 ) as "{col}_tend{ventana}"
             """)
     
-    # Build and execute query
+    # Use CTE to calculate row numbers first, then apply REGR_SLOPE
     query = f"""
+    WITH numbered AS (
+        SELECT 
+            *,
+            ROW_NUMBER() OVER (PARTITION BY numero_de_cliente ORDER BY foto_mes) as row_num
+        FROM df
+    )
     SELECT 
-        *,
+        * EXCLUDE (row_num),
         {', '.join(trend_exprs)}
-    FROM df
+    FROM numbered
     """
     
     result = con.execute(query).pl()
