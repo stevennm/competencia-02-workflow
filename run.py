@@ -1,6 +1,11 @@
 """
 Main orchestrator script for the LightGBM workflow
 Executes the complete pipeline from data loading to Kaggle submission
+
+For running steps independently, see:
+- run_preprocessing.py (preprocessing only)
+- run_feature_engineering.py (feature engineering only)
+- STANDALONE_SCRIPTS.md (documentation)
 """
 
 import sys
@@ -41,27 +46,29 @@ def main():
         # =====================================================================
         # STEP 1: PREPROCESSING
         # =====================================================================
-        print_section("STEP 1: PREPROCESSING")
-        df = preprocess_data("data/competencia_02_target.parquet")
+        # print_section("STEP 1: PREPROCESSING")
+        # df = preprocess_data("data/competencia_02_target.parquet")
+        # df = pl.read_parquet("data/preprocessed_data.parquet")
         
         # =====================================================================
         # STEP 2: FEATURE ENGINEERING - INTRA-MONTH
         # =====================================================================
-        print_section("STEP 2: INTRA-MONTH FEATURE ENGINEERING")
-        df = add_intra_month_features(df)
+        # print_section("STEP 2: INTRA-MONTH FEATURE ENGINEERING")
+        # df = add_intra_month_features(df)
         
         # =====================================================================
         # STEP 3: FEATURE ENGINEERING - HISTORICAL
         # =====================================================================
-        print_section("STEP 3: HISTORICAL FEATURE ENGINEERING")
+        # print_section("STEP 3: HISTORICAL FEATURE ENGINEERING")
         
-        # Define columns that can have lags
-        cols_lagueables = [col for col in df.columns 
-                          if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
+        # # Define columns that can have lags
+        # cols_lagueables = [col for col in df.columns 
+        #                   if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
-        print(f"Base features for lags: {len(cols_lagueables)}")
+        # print(f"Base features for lags: {len(cols_lagueables)}")
         
-        df = add_historical_features(df, cols_lagueables, PARAM)
+        # df = add_historical_features(df, cols_lagueables, PARAM)
+        df = pl.read_parquet("data/featured_data.parquet")
         
         # =====================================================================
         # STEP 4: RANDOM FOREST FEATURES
