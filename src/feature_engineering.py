@@ -5,6 +5,7 @@ Handles intra-month features, historical lags, deltas, and trends
 
 import polars as pl
 import numpy as np
+import duckdb
 from typing import List, Dict
 from tqdm import tqdm
 
@@ -120,13 +121,7 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
                                      ratioavg: bool = False,
                                      ratiomax: bool = False) -> pl.DataFrame:
     """
-    Calculate trend features using rolling windows
-    
-    Translates the R fhistC function to Polars.
-    For each column, calculates over a rolling window:
-    - Trend: linear regression slope
-    - Min, max, average
-    - Ratios
+    Calculate trend features using DuckDB for fast REGR_SLOPE calculation
     
     Args:
         df: Input DataFrame (must be sorted by numero_de_cliente, foto_mes)
@@ -145,14 +140,13 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
     print(f"\nCalculating trend features (window: {ventana} months)...")
     print(f"  Features: tend={tendencia}, min={minimo}, max={maximo}, avg={promedio}, ratioavg={ratioavg}, ratiomax={ratiomax}")
     
-    # We'll process each column
-    for col in tqdm(cols, desc="Processing columns"):
+    # First, add simple rolling features using Polars (fast)
+    for col in cols:
         if col not in df.columns:
             continue
             
         new_cols = []
         
-        # Rolling average
         if promedio or ratioavg:
             new_cols.append(
                 pl.col(col).rolling_mean(window_size=ventana, min_periods=2)
@@ -160,7 +154,6 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
                 .alias(f"{col}_avg{ventana}")
             )
         
-        # Rolling min
         if minimo:
             new_cols.append(
                 pl.col(col).rolling_min(window_size=ventana, min_periods=2)
@@ -168,7 +161,6 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
                 .alias(f"{col}_min{ventana}")
             )
         
-        # Rolling max
         if maximo or ratiomax:
             new_cols.append(
                 pl.col(col).rolling_max(window_size=ventana, min_periods=2)
@@ -176,22 +168,16 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
                 .alias(f"{col}_max{ventana}")
             )
         
-        # Add these columns to dataframe
         if new_cols:
             df = df.with_columns(new_cols)
-        
-        # Trend calculation (linear regression slope) - more complex
-        if tendencia:
-            # We need to calculate the slope of linear regression over rolling window
-            # Formula: slope = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
-            # where x = [1, 2, 3, ..., ventana] and y = values
-            df = df.with_columns([
-                calculate_rolling_trend(pl.col(col), ventana)
-                .over("numero_de_cliente")
-                .alias(f"{col}_tend{ventana}")
-            ])
-        
-        # Ratio features
+    
+    # Now calculate trends using DuckDB (much faster than numpy loops)
+    if tendencia:
+        print(f"  Calculating trends with DuckDB for {len(cols)} columns...")
+        df = calculate_trends_duckdb(df, cols, ventana)
+    
+    # Add ratio features
+    for col in cols:
         if ratioavg and f"{col}_avg{ventana}" in df.columns:
             df = df.with_columns([
                 (pl.col(col) / pl.col(f"{col}_avg{ventana}")).alias(f"{col}_ratioavg{ventana}")
@@ -207,66 +193,47 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
     return df
 
 
-def calculate_rolling_trend(col_expr: pl.Expr, window_size: int) -> pl.Expr:
+def calculate_trends_duckdb(df: pl.DataFrame, cols: List[str], ventana: int) -> pl.DataFrame:
     """
-    Calculate rolling linear regression slope (trend)
-    
-    This implements the least squares formula for slope:
-    slope = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
+    Calculate linear regression slopes using DuckDB's REGR_SLOPE function
     
     Args:
-        col_expr: Polars expression for the column
-        window_size: Window size
+        df: Input DataFrame
+        cols: List of columns to calculate trends for
+        ventana: Window size
         
     Returns:
-        Polars expression for the trend
+        DataFrame with trend columns added
     """
-    # Create indices [1, 2, 3, ..., window_size] for each window
-    # For a window of size n, x values are always [1, 2, ..., n]
-    # So we can precompute: Σx = n(n+1)/2, Σx² = n(n+1)(2n+1)/6
+    con = duckdb.connect(':memory:')
     
-    n = window_size
-    sum_x = n * (n + 1) / 2
-    sum_x_squared = n * (n + 1) * (2 * n + 1) / 6
-    denominator = n * sum_x_squared - sum_x * sum_x
+    # Build trend expressions for SQL
+    trend_exprs = []
+    for col in cols:
+        if col in df.columns:
+            trend_exprs.append(f"""
+                REGR_SLOPE(
+                    "{col}", 
+                    ROW_NUMBER() OVER (PARTITION BY numero_de_cliente ORDER BY foto_mes)
+                ) OVER (
+                    PARTITION BY numero_de_cliente 
+                    ORDER BY foto_mes 
+                    ROWS BETWEEN {ventana - 1} PRECEDING AND CURRENT ROW
+                ) as "{col}_tend{ventana}"
+            """)
     
-    # Calculate Σy (rolling sum of values)
-    sum_y = col_expr.rolling_sum(window_size=window_size, min_periods=2)
+    # Build and execute query
+    query = f"""
+    SELECT 
+        *,
+        {', '.join(trend_exprs)}
+    FROM df
+    """
     
-    # Calculate Σxy (need to multiply each value by its position in window)
-    # This is more complex - we need a custom approach
-    # For simplicity, we'll use a map_batches approach
+    result = con.execute(query).pl()
+    con.close()
     
-    def calc_trend_numpy(s: pl.Series) -> pl.Series:
-        """Calculate trend using numpy for a series"""
-        arr = s.to_numpy()
-        result = np.full(len(arr), np.nan, dtype=np.float64)
-        
-        for i in range(window_size - 1, len(arr)):
-            window = arr[i - window_size + 1:i + 1]
-            # Remove NaN values
-            valid_mask = ~np.isnan(window)
-            valid_values = window[valid_mask]
-            
-            if len(valid_values) >= 2:
-                # x values for valid data points
-                x_vals = np.arange(1, len(valid_values) + 1)
-                n_valid = len(valid_values)
-                
-                # Calculate slope
-                sum_x_local = np.sum(x_vals)
-                sum_y_local = np.sum(valid_values)
-                sum_xy = np.sum(x_vals * valid_values)
-                sum_x2_local = np.sum(x_vals ** 2)
-                
-                denom = n_valid * sum_x2_local - sum_x_local ** 2
-                if denom != 0:
-                    slope = (n_valid * sum_xy - sum_x_local * sum_y_local) / denom
-                    result[i] = slope
-        
-        return pl.Series(result)
-    
-    return col_expr.map_batches(calc_trend_numpy)
+    return result
 
 
 def add_historical_features(df: pl.DataFrame, cols_lagueables: List[str],
