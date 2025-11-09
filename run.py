@@ -10,7 +10,9 @@ For running steps independently, see:
 
 import sys
 import time
+import logging
 from datetime import datetime
+from pathlib import Path
 import polars as pl
 
 # Import all modules
@@ -27,18 +29,55 @@ from src.scoring import score_future_data, generate_submission
 from src.gain_analysis import create_gain_curve
 
 
+def setup_logging():
+    """Setup logging to file and console"""
+    # Create logs directory if it doesn't exist
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    # Create log filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = log_dir / f"run_{timestamp}.log"
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Log file: {log_file}")
+    
+    return logger
+
+
 def print_section(title: str):
     """Print a formatted section header"""
-    print("\n" + "="*70)
+    separator = "="*70
+    print(f"\n{separator}")
     print(f"  {title}")
-    print("="*70)
+    print(separator)
+    logging.info(separator)
+    logging.info(f"  {title}")
+    logging.info(separator)
 
 
 def main():
     """Main execution function"""
     start_time = time.time()
+    
+    # Setup logging
+    logger = setup_logging()
+    
     print_section(f"LIGHTGBM WORKFLOW - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
+    # Log experiment configuration
+    logger.info(f"Experiment: {PARAM['experimento']}")
+    logger.info(f"Seed: {PARAM['semilla_primigenia']}")
     print(f"\nExperiment: {PARAM['experimento']}")
     print(f"Seed: {PARAM['semilla_primigenia']}")
     
@@ -68,7 +107,9 @@ def main():
         # print(f"Base features for lags: {len(cols_lagueables)}")
         
         # df = add_historical_features(df, cols_lagueables, PARAM)
+        logger.info("Loading featured data from parquet file")
         df = pl.read_parquet("data/featured_data.parquet")
+        logger.info(f"Loaded featured data: {df.shape[0]} rows, {df.shape[1]} columns")
         
         # =====================================================================
         # STEP 4: RANDOM FOREST FEATURES
@@ -90,18 +131,23 @@ def main():
         campos_buenos = [col for col in df.columns 
                         if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
+        logger.info(f"Total features: {len(campos_buenos)}")
         print(f"Total features: {len(campos_buenos)}")
         
+        logger.info("Preparing training data...")
         dtrain, df_test, test_matrix, campos_buenos_valid, n_train = prepare_training_data(
             df, PARAM, campos_buenos
         )
+        logger.info(f"Training samples: {n_train}")
         
         # =====================================================================
         # STEP 6: BAYESIAN OPTIMIZATION
         # =====================================================================
         print_section("STEP 6: BAYESIAN OPTIMIZATION WITH OPTUNA")
         
+        logger.info("Starting Bayesian optimization...")
         best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM, n_train)
+        logger.info(f"Best parameters found: {best_params}")
         
         # Store best parameters
         PARAM["train_final"]["param_mejores"] = best_params
@@ -111,28 +157,36 @@ def main():
         # =====================================================================
         print_section("STEP 7: TRAIN FINAL ENSEMBLE")
         
+        logger.info("Training final ensemble models...")
         train_final_models(df, PARAM, campos_buenos, best_params)
+        logger.info("Final models trained successfully")
         
         # =====================================================================
         # STEP 8: SCORING
         # =====================================================================
         print_section("STEP 8: SCORE FUTURE DATA")
         
+        logger.info("Scoring future data...")
         df_pred = score_future_data(df, PARAM, campos_buenos)
+        logger.info(f"Scored {len(df_pred)} predictions")
         
         # =====================================================================
         # STEP 9: GENERATE SUBMISSION
         # =====================================================================
         print_section("STEP 9: GENERATE KAGGLE SUBMISSION")
         
+        logger.info("Generating Kaggle submission...")
         generate_submission(df_pred, PARAM, n_envios=11000)
+        logger.info(f"Submission file: kaggle/KA{PARAM['experimento']}_11000.csv")
         
         # =====================================================================
         # STEP 10: GAIN CURVE ANALYSIS (if labels available)
         # =====================================================================
         print_section("STEP 10: GAIN CURVE ANALYSIS")
         
+        logger.info("Creating gain curve analysis...")
         create_gain_curve(df, df_pred, PARAM)
+        logger.info("Gain curve analysis complete")
         
         # =====================================================================
         # COMPLETION
@@ -143,7 +197,12 @@ def main():
         seconds = int(elapsed_time % 60)
         
         print_section("WORKFLOW COMPLETED SUCCESSFULLY")
-        print(f"\nTotal execution time: {hours:02d}h {minutes:02d}m {seconds:02d}s")
+        
+        time_str = f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
+        logger.info(f"Total execution time: {time_str}")
+        logger.info(f"Experiment: {PARAM['experimento']}")
+        
+        print(f"\nTotal execution time: {time_str}")
         print(f"Experiment: {PARAM['experimento']}")
         print(f"\nOutput files (in output/ directory):")
         print(f"  - output/BO_log.txt (Bayesian Optimization log)")
@@ -155,14 +214,29 @@ def main():
         print(f"  - output/analysis/gain_curve.png (Gain curve visualization)")
         print(f"  - output/analysis/gain_by_cutoff.csv (Gain statistics)")
         
+        logger.info("All output files saved successfully")
+        logger.info("="*70)
+        logger.info("WORKFLOW COMPLETED SUCCESSFULLY")
+        logger.info("="*70)
+        
         return 0
         
     except Exception as e:
+        error_msg = f"ERROR: {str(e)}"
         print(f"\n{'='*70}")
-        print(f"ERROR: {str(e)}")
+        print(error_msg)
         print(f"{'='*70}")
+        
+        logging.error(error_msg)
+        logging.error("="*70)
+        
         import traceback
         traceback.print_exc()
+        
+        # Log full traceback
+        logging.error("Full traceback:")
+        logging.error(traceback.format_exc())
+        
         return 1
 
 
