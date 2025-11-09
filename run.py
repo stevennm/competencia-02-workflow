@@ -71,7 +71,7 @@ def main():
         campos_buenos = [col for col in df.columns 
                         if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
-        df = add_rf_features(df, PARAM, campos_buenos)
+        #df = add_rf_features(df, PARAM, campos_buenos)
         
         # =====================================================================
         # STEP 5: PREPARE DATA FOR TRAINING
@@ -84,7 +84,7 @@ def main():
         
         print(f"Total features: {len(campos_buenos)}")
         
-        dtrain, df_test, test_matrix, campos_buenos_valid = prepare_training_data(
+        dtrain, df_test, test_matrix, campos_buenos_valid, n_train = prepare_training_data(
             df, PARAM, campos_buenos
         )
         
@@ -93,7 +93,7 @@ def main():
         # =====================================================================
         print_section("STEP 6: BAYESIAN OPTIMIZATION WITH OPTUNA")
         
-        best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM)
+        best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM, n_train)
         
         # Store best parameters
         PARAM["train_final"]["param_mejores"] = best_params

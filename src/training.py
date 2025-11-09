@@ -94,7 +94,8 @@ def prepare_training_data(df: pl.DataFrame, config: Dict, campos_buenos: List[st
     print(f"Testing set: {test_matrix.shape[0]} rows")
     print(f"  BAJA+2: {df_test.filter(pl.col('clase_ternaria') == 'BAJA+2').shape[0]}")
     
-    return dtrain, df_test, test_matrix, campos_buenos_valid
+    n_train = X_train.shape[0]
+    return dtrain, df_test, test_matrix, campos_buenos_valid, n_train
 
 
 def calculate_gain_with_meseta(predictions: np.ndarray, gan_values: np.ndarray, 
@@ -141,7 +142,7 @@ def calculate_gain_with_meseta(predictions: np.ndarray, gan_values: np.ndarray,
 
 def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame, 
                               test_matrix: np.ndarray, config: Dict,
-                              log_file: str = "BO_log.txt"):
+                              n_train: int, log_file: str = "BO_log.txt"):
     """
     Create Optuna objective function
     
@@ -150,6 +151,7 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
         df_test: Testing DataFrame with gan column
         test_matrix: Testing feature matrix
         config: Configuration dictionary
+        n_train: Number of training samples
         log_file: Path to log file
         
     Returns:
@@ -180,7 +182,6 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
         num_leaves = trial.suggest_int("num_leaves", 2, 1024, log=True)
         
         # Check constraint: min_data_in_leaf * num_leaves <= n_training
-        n_train = dtrain.num_data()
         if min_data_in_leaf * num_leaves > n_train:
             return -np.inf
         
@@ -235,7 +236,7 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
 
 
 def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
-                              test_matrix: np.ndarray, config: Dict) -> Dict:
+                              test_matrix: np.ndarray, config: Dict, n_train: int) -> Dict:
     """
     Run Bayesian Optimization with Optuna
     
@@ -244,6 +245,7 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
         df_test: Testing DataFrame
         test_matrix: Testing feature matrix
         config: Configuration dictionary
+        n_train: Number of training samples
         
     Returns:
         Dictionary with best parameters
@@ -255,7 +257,7 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     n_trials = config["hipeparametertuning"]["BO_iteraciones"]
     
     # Create objective function
-    objective = create_objective_function(dtrain, df_test, test_matrix, config)
+    objective = create_objective_function(dtrain, df_test, test_matrix, config, n_train)
     
     # Create study
     study = optuna.create_study(
