@@ -127,7 +127,8 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     
     # Concatenate all period features
     print("Concatenating RF features...")
-    rf_features_df = pl.concat(all_rf_features)
+    # Use diagonal concat to handle different column sets across periods
+    rf_features_df = pl.concat(all_rf_features, how="diagonal")
     
     # Add index to original dataframe for joining
     df = df.with_columns([
