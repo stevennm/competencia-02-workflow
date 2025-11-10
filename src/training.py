@@ -331,16 +331,17 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     # Create db directory
     os.makedirs("db", exist_ok=True)
     
-    # Create database URL
-    db_url = f"sqlite:///db/optuna_{experimento}.db"
+    # Use shared database for all experiments
+    db_url = "sqlite:///db/optuna.db"
+    study_name = f"lgbm_{experimento}"
+    
     print(f"Study database: {db_url}")
+    print(f"Study name: {study_name}")
     
     # Create objective function
     objective = create_objective_function(dtrain, df_test, test_matrix, config, n_train)
     
     # Create or load study (load_if_exists handles both cases)
-    study_name = f"lgbm_{experimento}"
-    
     study = optuna.create_study(
         study_name=study_name,
         storage=db_url,
@@ -352,7 +353,7 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     # Check if study already had trials
     trials_completed = len(study.trials)
     if trials_completed > 0:
-        print(f"Loaded existing study: {trials_completed} trials already completed")
+        print(f"Loaded existing study '{study_name}': {trials_completed} trials already completed")
     else:
         print(f"Created new study: {study_name}")
     

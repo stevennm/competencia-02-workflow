@@ -37,14 +37,20 @@ output/
 
 ## Database Organization
 
-Optuna databases are also experiment-specific:
+All experiments share a single Optuna database with separate studies:
 
 ```
 db/
-├── optuna_seg-001.db    # Study for experiment seg-001
-├── optuna_seg-002.db    # Study for experiment seg-002
-└── ...
+└── optuna.db            # Shared database for all experiments
+    ├── study: lgbm_seg-001
+    ├── study: lgbm_seg-002
+    └── study: lgbm_seg-003
 ```
+
+**Benefits:**
+- Easy to compare experiments in Optuna Dashboard
+- All optimization history in one place
+- Simpler to manage and backup
 
 ## Benefits
 
@@ -95,12 +101,22 @@ If you use the same experiment name, Optuna will continue from where it left off
 
 ### Fresh Start
 To start completely fresh:
-1. Change experiment name, OR
-2. Delete the experiment directory and database:
+1. Change experiment name (creates new study in shared DB), OR
+2. Delete the experiment directory:
    ```bash
    rm -rf output/seg-001
-   rm db/optuna_seg-001.db
    ```
+   
+Note: Optuna studies remain in the shared database. To delete a specific study:
+```bash
+# Using Optuna CLI
+optuna delete-study --study-name lgbm_seg-001 --storage sqlite:///db/optuna.db
+```
+
+Or view/delete via Optuna Dashboard:
+```bash
+optuna-dashboard sqlite:///db/optuna.db
+```
 
 ## Shared Resources
 

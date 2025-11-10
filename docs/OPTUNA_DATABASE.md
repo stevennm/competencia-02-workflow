@@ -2,14 +2,15 @@
 
 ## Implementation
 
-Optuna optimization results are now saved to a SQLite database in the `db/` directory.
+Optuna optimization results are saved to a **shared SQLite database** in the `db/` directory.
 
 ## Features
 
 ### 1. Persistent Storage
-- Database: `db/optuna_{experimento}.db`
-- Study name: `lgbm_{experimento}`
+- **Database**: `db/optuna.db` (shared across all experiments)
+- **Study name**: `lgbm_{experimento}` (unique per experiment)
 - All trials are saved automatically
+- Multiple experiments coexist in the same database
 
 ### 2. Resume Capability
 If the script is interrupted or you want to add more trials:
@@ -37,9 +38,11 @@ Third run (add more trials, change config to 50):
 **Query trials:**
 ```python
 import optuna
+
+# Load a specific study from shared database
 study = optuna.load_study(
     study_name="lgbm_seg-001",
-    storage="sqlite:///db/optuna_seg-001.db"
+    storage="sqlite:///db/optuna.db"
 )
 
 # Best trial
@@ -61,19 +64,32 @@ optuna.visualization.plot_param_importances(study)
 import sqlite3
 import pandas as pd
 
-conn = sqlite3.connect('db/optuna_seg-001.db')
-trials = pd.read_sql("SELECT * FROM trials", conn)
+conn = sqlite3.connect('db/optuna.db')
+trials = pd.read_sql("SELECT * FROM trials WHERE study_id = (SELECT study_id FROM studies WHERE study_name = 'lgbm_seg-001')", conn)
 print(trials.head())
 ```
 
 ### 4. Multiple Experiments
 
-Each experiment gets its own database:
+All experiments share a single database with separate studies:
 ```
 db/
-├── optuna_seg-001.db  # Experiment seg-001
-├── optuna_seg-002.db  # Experiment seg-002
-└── optuna_seg-003.db  # Experiment seg-003
+└── optuna.db          # Shared database
+    ├── study: lgbm_seg-001
+    ├── study: lgbm_seg-002
+    └── study: lgbm_seg-003
+```
+
+**Compare experiments:**
+```python
+import optuna
+
+# Load multiple studies
+study1 = optuna.load_study(study_name="lgbm_seg-001", storage="sqlite:///db/optuna.db")
+study2 = optuna.load_study(study_name="lgbm_seg-002", storage="sqlite:///db/optuna.db")
+
+print(f"Experiment 1 best gain: {study1.best_value}")
+print(f"Experiment 2 best gain: {study2.best_value}")
 ```
 
 ## Configuration
@@ -94,7 +110,8 @@ PARAM = {
 ==================================================
 RUNNING BAYESIAN OPTIMIZATION
 ==================================================
-Study database: sqlite:///db/optuna_seg-001.db
+Study database: sqlite:///db/optuna.db
+Study name: lgbm_seg-001
 Created new study: lgbm_seg-001
 Running 30 remaining trials (out of 30 total)...
 [Progress bar...]
@@ -129,15 +146,28 @@ No need to start from scratch!
 ## Technical Details
 
 - **Database**: SQLite (no server needed)
-- **Location**: `db/optuna_{experimento}.db`
+- **Location**: `db/optuna.db` (shared across experiments)
 - **Format**: Standard Optuna schema
+- **Studies**: One per experiment (`lgbm_{experimento}`)
 - **Size**: ~10-50 KB per trial (very small)
 
 ## Cleanup
 
-To start fresh, simply delete the database:
+To delete a specific study:
 ```bash
-rm db/optuna_seg-001.db
+# Using Optuna CLI
+optuna delete-study --study-name lgbm_seg-001 --storage sqlite:///db/optuna.db
+```
+
+To start completely fresh (delete all studies):
+```bash
+rm db/optuna.db
+```
+
+To view/manage studies via web UI:
+```bash
+optuna-dashboard sqlite:///db/optuna.db
+# Opens browser at http://127.0.0.1:8080
 ```
 
 Or delete entire db directory:
