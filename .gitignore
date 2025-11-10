@@ -47,5 +47,5 @@ Thumbs.db
 data/competencia_02_target.parquet
 data/preprocessed_data.parquet
 data/featured_data.parquet
-
+data/final_dataset.parquet
 output/modelitos/
