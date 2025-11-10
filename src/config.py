@@ -4,7 +4,7 @@ Configuration file for the LightGBM workflow with Bayesian Optimization
 
 PARAM = {
     # Experiment configuration
-    "experimento": "semillerio_optuna2_moretrials",
+    "experimento": "sin_pandemia_conparamsexp2",
     "semilla_primigenia": 102191,
     
     # Feature Engineering - Random Forest
@@ -39,8 +39,9 @@ PARAM = {
         "training": [
             201901, 201902, 201903, 201904, 201905, 201906,
             201907, 201908, 201909, 201910, 201911, 201912,
-            202001, 202002, 202003, 202004, 202005, 202006,
-            202007, 202008, 202009, 202010, 202011, 202012,
+            202001, 202002, #202003, 202004, 202005, 202006,
+            #202007, 202008, 202009, 202010, 
+            202011, 202012,
             202101, 202102 #, 202103, 202104
         ],
         "undersampling": 0.05,
@@ -49,7 +50,7 @@ PARAM = {
     
     # Hyperparameter Tuning
     "hipeparametertuning": {
-        "BO_iteraciones": 50,  # Number of Bayesian Optimization iterations
+        "BO_iteraciones": 0,  # Set to 0 to skip Bayesian Optimization
         # Multi-seed ensemble during BO (optional, increases robustness but slower)
         "ksemillerio": 3,  # Number of models with different seeds per trial (1=fast, 5=robust)
         "repe": 2          # Number of repetitions to average (1=fast, 3=very robust)
@@ -91,13 +92,21 @@ PARAM = {
         "training": [
             201901, 201902, 201903, 201904, 201905, 201906,
             201907, 201908, 201909, 201910, 201911, 201912,
-            202001, 202002, 202003, 202004, 202005, 202006,
-            202007, 202008, 202009, 202010, 202011, 202012,
+            202001, 202002, #202003, 202004, 202005, 202006,
+            #202007, 202008, 202009, 202010, 
+            202011, 202012,
             202101, 202102, 202103, 202104 #, 202105, 202106
         ],
         "undersampling": 0.10,
         "ksemillerio": 30,  # Number of models in final ensemble
-        "param_mejores": None,  # Will be set after optimization
+        "param_mejores": {
+            # Best hyperparameters from semillerio_optuna2_moretrials (trial 45)
+            "num_iterations": 1491,
+            "learning_rate": 0.032888026616230304,
+            "feature_fraction": 0.2272840312390512,
+            "min_data_in_leaf": 3,
+            "num_leaves": 680
+        },
         "semillas": None  # Will be generated
     },
     

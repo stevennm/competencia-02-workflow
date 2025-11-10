@@ -164,27 +164,43 @@ def main():
         # =====================================================================
         # STEP 6: BAYESIAN OPTIMIZATION
         # =====================================================================
-        print_section("STEP 6: BAYESIAN OPTIMIZATION WITH OPTUNA")
+        bo_iterations = PARAM["hipeparametertuning"]["BO_iteraciones"]
         
-        logger.info("Starting Bayesian optimization...")
-        best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM, n_train)
-        logger.info(f"Best parameters found: {best_params}")
-        
-        # Store best parameters
-        PARAM["train_final"]["param_mejores"] = best_params
-        
-        # =====================================================================
-        # STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS
-        # =====================================================================
-        print_section("STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS")
-        
-        logger.info("Training validation ensemble (Optuna split)...")
-        validation_pred = train_validation_ensemble(df, PARAM, campos_buenos, best_params)
-        logger.info("Validation ensemble trained")
-        
-        logger.info("Creating validation gain curve...")
-        create_validation_gain_curve(validation_pred, PARAM)
-        logger.info("Validation gain analysis complete")
+        if bo_iterations > 0:
+            print_section("STEP 6: BAYESIAN OPTIMIZATION WITH OPTUNA")
+            
+            logger.info("Starting Bayesian optimization...")
+            best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM, n_train)
+            logger.info(f"Best parameters found: {best_params}")
+            
+            # Store best parameters
+            PARAM["train_final"]["param_mejores"] = best_params
+            
+            # =====================================================================
+            # STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS
+            # =====================================================================
+            print_section("STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS")
+            
+            logger.info("Training validation ensemble (Optuna split)...")
+            validation_pred = train_validation_ensemble(df, PARAM, campos_buenos, best_params)
+            logger.info("Validation ensemble trained")
+            
+            logger.info("Creating validation gain curve...")
+            create_validation_gain_curve(validation_pred, PARAM)
+            logger.info("Validation gain analysis complete")
+        else:
+            print_section("STEP 6: SKIPPING BAYESIAN OPTIMIZATION")
+            print("Using pre-configured hyperparameters from config.py")
+            
+            best_params = PARAM["train_final"]["param_mejores"]
+            if best_params is None:
+                raise ValueError("BO_iteraciones=0 but param_mejores is None. Please set param_mejores in config.py")
+            
+            logger.info(f"Using hyperparameters: {best_params}")
+            print(f"✓ Hyperparameters loaded: {best_params}")
+            
+            print("\nNote: Skipping validation ensemble analysis (requires Optuna split)")
+            logger.info("Skipping validation ensemble (no Optuna split available)")
         
         # =====================================================================
         # STEP 8: TRAIN FINAL MODELS
