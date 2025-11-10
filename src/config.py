@@ -49,9 +49,12 @@ PARAM = {
     
     # Hyperparameter Tuning
     "hipeparametertuning": {
-        "BO_iteraciones": 50,  # 50 would be more reasonable for production
-        "ksemillerio": 1,  # Number of seeds in ensemble during BO
-        "repe": 1  # Number of repetitions per evaluation
+        "BO_iteraciones": 50,  # Number of Bayesian Optimization iterations
+        # Multi-seed ensemble during BO (optional, increases robustness but slower)
+        "ksemillerio": 1,  # Number of models with different seeds per trial (1=fast, 5=robust)
+        "repe": 1          # Number of repetitions to average (1=fast, 3=very robust)
+        # Total models per trial = ksemillerio × repe
+        # Example: ksemillerio=5, repe=3 → 15 models per trial (15x slower!)
     },
     
     # LightGBM Fixed Parameters

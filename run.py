@@ -27,7 +27,7 @@ from src.training import (
     train_final_models
 )
 from src.scoring import score_future_data, generate_submission
-from src.gain_analysis import create_gain_curve
+from src.gain_analysis import create_gain_curve, create_ensemble_gain_curve
 
 
 def setup_logging():
@@ -188,6 +188,10 @@ def main():
         logger.info("Creating gain curve analysis...")
         create_gain_curve(df, df_pred, PARAM)
         logger.info("Gain curve analysis complete")
+        
+        logger.info("Creating ensemble gain curve...")
+        create_ensemble_gain_curve(df, PARAM)
+        logger.info("Ensemble gain curve complete")
         
         # =====================================================================
         # COMPLETION

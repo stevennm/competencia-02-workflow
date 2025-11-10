@@ -41,19 +41,22 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
     X_future = df_future.select(campos_buenos_valid).to_numpy()
     
     # Load all models and make predictions
-    model_files = glob("output/modelitos/mod_*.txt")
+    model_files = sorted(glob("output/modelitos/mod_*.txt"))
     
     if len(model_files) == 0:
         raise FileNotFoundError("No models found in output/modelitos/ directory!")
     
     print(f"Loading {len(model_files)} models...")
     
+    # Store individual predictions for ensemble analysis
+    all_predictions = []
     predictions_sum = np.zeros(X_future.shape[0])
     n_models = 0
     
     for model_file in model_files:
         modelo = lgb.Booster(model_file=model_file)
         predictions = modelo.predict(X_future)
+        all_predictions.append(predictions)
         predictions_sum += predictions
         n_models += 1
     
@@ -71,6 +74,16 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
     os.makedirs("output", exist_ok=True)
     print("Saving predictions to output/prediccion.txt...")
     df_pred.write_csv("output/prediccion.txt", separator="\t")
+    
+    # Save individual predictions for ensemble analysis
+    print("Saving individual model predictions...")
+    df_individual = df_future.select(["numero_de_cliente", "foto_mes"])
+    for i, preds in enumerate(all_predictions):
+        df_individual = df_individual.with_columns([
+            pl.Series(f"prob_seed_{i+1}", preds)
+        ])
+    df_individual.write_parquet("output/predicciones_ensemble.parquet")
+    print("✓ Individual predictions saved to output/predicciones_ensemble.parquet")
     
     return df_pred
 

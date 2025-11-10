@@ -69,7 +69,9 @@ def prepare_training_data(df: pl.DataFrame, config: Dict, campos_buenos: List[st
     X_train = df_train.select(campos_buenos_valid).to_numpy()
     y_train = df_train.select("clase01").to_numpy().ravel()
     
-    dtrain = lgb.Dataset(X_train, label=y_train, free_raw_data=False)
+    # Create dataset with feature names
+    dtrain = lgb.Dataset(X_train, label=y_train, free_raw_data=False,
+                         feature_name=campos_buenos_valid)
     
     print(f"Training set: {X_train.shape[0]} rows, {X_train.shape[1]} columns")
     print(f"  Positives: {y_train.sum()}, Negatives: {len(y_train) - y_train.sum()}")
@@ -159,7 +161,17 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     """
     gan_values = df_test.select("gan").to_numpy().ravel()
     fixed_params = config["lgbm"]["param_fijos"].copy()
-    fixed_params["seed"] = config["semilla_primigenia"]
+    
+    # Get semillerio and repe parameters
+    ksemillerio = config["hipeparametertuning"].get("ksemillerio", 1)
+    repe = config["hipeparametertuning"].get("repe", 1)
+    
+    # Generate seeds for semillerio (if needed)
+    if ksemillerio > 1 or repe > 1:
+        np.random.seed(config["semilla_primigenia"])
+        # Generate prime-like seeds
+        total_seeds = ksemillerio * repe
+        semillas = np.random.randint(100000, 1000000, size=total_seeds)
     
     # Initialize log file
     os.makedirs("output", exist_ok=True)
@@ -196,20 +208,64 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
             "num_leaves": num_leaves
         })
         
-        # Train model
-        modelo = lgb.train(
-            params,
-            dtrain,
-            num_boost_round=num_iterations,
-            valid_sets=None,
-            callbacks=[lgb.log_evaluation(period=0)]
-        )
-        
-        # Predict on test
-        predictions = modelo.predict(test_matrix)
-        
-        # Calculate gain
-        gain = calculate_gain_with_meseta(predictions, gan_values)
+        # Simple case: single seed (default behavior)
+        if ksemillerio == 1 and repe == 1:
+            params["seed"] = config["semilla_primigenia"]
+            
+            # Train model
+            modelo = lgb.train(
+                params,
+                dtrain,
+                num_boost_round=num_iterations,
+                valid_sets=None,
+                callbacks=[lgb.log_evaluation(period=0)]
+            )
+            
+            # Predict on test
+            predictions = modelo.predict(test_matrix)
+            
+            # Calculate gain
+            gain = calculate_gain_with_meseta(predictions, gan_values)
+            
+        else:
+            # Multi-seed case: ensemble with repetitions
+            vgan_mesetas = []
+            
+            # Loop over repetitions
+            for r in range(repe):
+                # Get seeds for this repetition
+                desde = r * ksemillerio
+                hasta = desde + ksemillerio
+                rsemillas = semillas[desde:hasta]
+                
+                # Accumulate predictions from semillerio
+                vpred_acum = np.zeros(len(gan_values))
+                
+                # Loop over seeds (semillerio)
+                for sem in rsemillas:
+                    params["seed"] = int(sem)
+                    
+                    # Train model
+                    modelo = lgb.train(
+                        params,
+                        dtrain,
+                        num_boost_round=num_iterations,
+                        valid_sets=None,
+                        callbacks=[lgb.log_evaluation(period=0)]
+                    )
+                    
+                    # Predict and accumulate
+                    vpred_acum += modelo.predict(test_matrix)
+                
+                # Average predictions from semillerio
+                vpred_acum = vpred_acum / ksemillerio
+                
+                # Calculate gain for this repetition
+                gain_rep = calculate_gain_with_meseta(vpred_acum, gan_values)
+                vgan_mesetas.append(gain_rep)
+            
+            # Average gain across repetitions
+            gain = np.mean(vgan_mesetas)
         
         # Update best
         if gain > best_gain["value"]:
@@ -256,7 +312,18 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     print("="*50)
     
     n_trials = config["hipeparametertuning"]["BO_iteraciones"]
+    ksemillerio = config["hipeparametertuning"].get("ksemillerio", 1)
+    repe = config["hipeparametertuning"].get("repe", 1)
     experimento = config["experimento"]
+    
+    print(f"Trials: {n_trials}")
+    print(f"Semillerio (ksemillerio): {ksemillerio}")
+    print(f"Repetitions (repe): {repe}")
+    if ksemillerio > 1 or repe > 1:
+        total_models = ksemillerio * repe
+        print(f"⚠ Each trial will train {total_models} models (slower but more robust)")
+    else:
+        print("Using single seed per trial (fast mode)")
     
     # Create db directory
     os.makedirs("db", exist_ok=True)
@@ -363,7 +430,9 @@ def train_final_models(df: pl.DataFrame, config: Dict,
     X_train_final = df_train_final.select(campos_buenos_valid).to_numpy()
     y_train_final = df_train_final.select("clase01").to_numpy().ravel()
     
-    dtrain_final = lgb.Dataset(X_train_final, label=y_train_final, free_raw_data=False)
+    # Create dataset with feature names
+    dtrain_final = lgb.Dataset(X_train_final, label=y_train_final, free_raw_data=False,
+                               feature_name=campos_buenos_valid)
     
     print(f"Final training set: {X_train_final.shape[0]} rows, {X_train_final.shape[1]} columns")
     
