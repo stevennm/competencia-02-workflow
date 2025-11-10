@@ -22,16 +22,21 @@ output/
 │   │   ├── mod_123456.txt
 │   │   ├── mod_234567.txt
 │   │   └── ...
-│   └── analysis/                    # Gain analysis
-│       ├── gain_curve.png
-│       ├── gain_curve_ensemble.png
-│       ├── gain_by_cutoff.csv
+│   ├── validation/                  # Validation set analysis (NEW)
+│   │   ├── predicciones_validation.parquet  # Predictions on Optuna test set
+│   │   ├── gain_curve_202104.png            # Validation gain curve
+│   │   └── gain_stats_202104.csv            # Validation statistics
+│   └── analysis/                    # Future set gain analysis
+│       ├── gain_curve_202106.png
+│       ├── gain_curve_ensemble_202106.png
+│       ├── gain_by_cutoff_202106.csv
 │       └── gain_ensemble_stats.csv
 ├── seg-002/                          # Another experiment
 │   └── ...
 └── kaggle/                           # Shared Kaggle submissions
-    ├── KAseg-001_11000.csv
-    ├── KAseg-002_11000.csv
+    ├── KAseg-001_202104_11000.csv
+    ├── KAseg-001_202106_11000.csv
+    ├── KAseg-002_202104_11000.csv
     └── ...
 ```
 
@@ -51,6 +56,50 @@ db/
 - Easy to compare experiments in Optuna Dashboard
 - All optimization history in one place
 - Simpler to manage and backup
+
+## Validation vs Future Analysis
+
+Starting from the latest version, the workflow generates **two separate gain analyses**:
+
+### 1. **Validation Analysis** (`output/{experimento}/validation/`)
+
+- **Purpose**: Evaluate model performance on the **Optuna test set**
+- **Training data**: Same as Optuna (e.g., up to 202102)
+- **Test data**: Same as Optuna validation (e.g., 202104)
+- **When**: After Bayesian Optimization, before final training
+- **Why**: 
+  - See how well the best hyperparameters generalize
+  - Compare with Optuna's optimization metric
+  - Validate that the ensemble performs as expected
+
+**Files generated:**
+- `predicciones_validation.parquet`: Individual model predictions
+- `gain_curve_202104.png`: Gain curve visualization
+- `gain_stats_202104.csv`: Statistics by cutoff
+
+### 2. **Future Analysis** (`output/{experimento}/analysis/`)
+
+- **Purpose**: Evaluate final ensemble on **true future data**
+- **Training data**: Extended (e.g., up to 202104)
+- **Test data**: Future month (e.g., 202106)
+- **When**: After final ensemble training
+- **Why**:
+  - Final performance estimate for Kaggle submission
+  - Determine optimal cutoff for submission
+  - Assess ensemble stability
+
+**Files generated:**
+- `gain_curve_202106.png`: Individual gain curves
+- `gain_curve_ensemble_202106.png`: Ensemble statistics
+- `gain_by_cutoff_202106.csv`: Detailed cutoff analysis
+- `gain_ensemble_stats.csv`: Summary statistics
+
+### Why Both?
+
+Having both analyses helps you:
+1. **Validate hyperparameters**: Validation set confirms Optuna found good params
+2. **Detect overfitting**: Compare validation vs future performance
+3. **Choose cutoffs wisely**: Use future analysis for final submission decisions
 
 ## Benefits
 

@@ -270,9 +270,13 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     colors = cm.rainbow(np.linspace(0, 1, n_seeds))
     x_range = range(len(gan_ensemble))
     
+    # Plot all seeds with thin lines (no labels for cleaner legend)
     for i, (gan_cum, color) in enumerate(zip(all_gains, colors)):
-        plt.plot(x_range, gan_cum, color=color, alpha=0.3, linewidth=1, 
-                label=f'Seed {i+1}' if i < 5 else '')  # Only label first 5 for clarity
+        plt.plot(x_range, gan_cum, color=color, alpha=0.3, linewidth=0.8)
+    
+    # Add a dummy line for legend
+    plt.plot([], [], color='gray', alpha=0.3, linewidth=0.8, 
+            label=f'Individual Seeds (n={n_seeds})')
     
     # Plot ensemble average (thick black line)
     plt.plot(x_range, gan_ensemble, color='black', linewidth=3, 
@@ -280,7 +284,7 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     
     # Mark maximum
     plt.scatter([max_idx], [max_gain], color='red', s=200, zorder=11, marker='o')
-    plt.annotate(f'Máximo\n{max_gain:,.0f}', 
+    plt.annotate(f'Máximo\n${max_gain:,.0f}', 
                 xy=(max_idx, max_gain),
                 xytext=(20, 20), textcoords='offset points',
                 fontsize=12, fontweight='bold', color='red',
@@ -290,7 +294,7 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     # Formatting
     plt.xlabel('Clientes ordenados por probabilidad (índice / Envíos)', fontsize=12)
     plt.ylabel('Ganancia Acumulada', fontsize=12)
-    plt.title('Ganancia Acumulada (Semillas y Ensemble) - EXP workflowtest', 
+    plt.title(f'Ganancia Acumulada (Semillas y Ensemble) - EXP {experimento}', 
              fontsize=14, fontweight='bold')
     plt.grid(True, alpha=0.3)
     
@@ -298,13 +302,8 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     ax = plt.gca()
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x/1e6:.0f}M' if x != 0 else '0'))
     
-    # Legend (only show first few seeds + ensemble)
-    handles, labels = ax.get_legend_handles_labels()
-    # Keep only first 5 seeds and ensemble
-    if len(handles) > 6:
-        handles = handles[:5] + [handles[-1]]
-        labels = labels[:5] + [labels[-1]]
-    plt.legend(handles, labels, loc='upper right', title='Modelo')
+    # Legend
+    plt.legend(loc='upper right', title='Modelo', fontsize=10)
     
     plt.tight_layout()
     
@@ -335,4 +334,161 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
         print(f"✓ Ensemble statistics saved to: output/{experimento}/analysis/gain_ensemble_stats.csv")
         print("\nEnsemble gain by cutoff:")
         print(df_stats)
+
+
+def create_validation_gain_curve(pred_df: pl.DataFrame, config: Dict) -> None:
+    """
+    Create gain curve for validation set (Optuna test month)
+    
+    Args:
+        pred_df: DataFrame with predictions from train_validation_ensemble
+        config: Configuration dictionary
+    """
+    print("\n" + "="*70)
+    print("GENERATING VALIDATION GAIN CURVE")
+    print("="*70)
+    
+    experimento = config["experimento"]
+    testing_months = config["trainingstrategy"]["testing"]
+    
+    print(f"Validation month(s): {testing_months}")
+    print(f"Records: {pred_df.shape[0]}")
+    
+    # Process each validation month
+    for validation_month in testing_months:
+        print(f"\n--- Validation Month: {validation_month} ---")
+        
+        df_month = pred_df.filter(pl.col("foto_mes") == validation_month)
+        
+        if df_month.shape[0] == 0:
+            print(f"No data for month {validation_month}, skipping...")
+            continue
+        
+        # Add gan column
+        df_month = df_month.with_columns([
+            pl.lit(-20000.0).alias("gan")
+        ])
+        df_month = df_month.with_columns([
+            pl.when(pl.col("clase_ternaria") == "BAJA+2")
+            .then(pl.lit(780000.0))
+            .otherwise(pl.col("gan"))
+            .alias("gan")
+        ])
+        
+        # Get prediction columns
+        pred_cols = [col for col in df_month.columns if col.startswith("pred_seed_")]
+        
+        if not pred_cols:
+            print("No individual predictions found, skipping...")
+            continue
+        
+        print(f"Found {len(pred_cols)} model predictions")
+        
+        # Create gain curves for each model
+        cutoffs = [7000, 8000, 9000, 10000, 11000, 12000, 13000]
+        
+        # Prepare plot
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        colors = cm.rainbow(np.linspace(0, 1, len(pred_cols)))
+        
+        # Store results for ensemble
+        ensemble_results = {cutoff: [] for cutoff in cutoffs}
+        
+        # Plot individual models
+        for idx, pred_col in enumerate(pred_cols):
+            # Sort by prediction
+            df_sorted = df_month.sort(pred_col, descending=True)
+            gan_values = df_sorted.select("gan").to_numpy().ravel()
+            
+            # Calculate cumulative gain
+            cumulative_gain = np.cumsum(gan_values)
+            n_envios = np.arange(1, len(gan_values) + 1)
+            
+            # Plot full curve
+            ax1.plot(n_envios, cumulative_gain, alpha=0.3, color=colors[idx], linewidth=0.8)
+            
+            # Calculate gains at cutoffs
+            for cutoff in cutoffs:
+                if cutoff <= len(gan_values):
+                    gain_at_cutoff = cumulative_gain[cutoff - 1]
+                    ensemble_results[cutoff].append(gain_at_cutoff)
+        
+        # Calculate and plot ensemble average
+        avg_gains = []
+        std_gains = []
+        
+        for cutoff in cutoffs:
+            gains = ensemble_results[cutoff]
+            avg_gains.append(np.mean(gains))
+            std_gains.append(np.std(gains))
+        
+        # Plot ensemble average on left plot
+        ax1.axhline(y=0, color='black', linestyle='--', linewidth=1, alpha=0.5)
+        ax1.set_xlabel('Number of Clients', fontsize=12)
+        ax1.set_ylabel('Cumulative Gain ($)', fontsize=12)
+        ax1.set_title(f'Individual Model Gains - Validation {validation_month}', fontsize=14, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        ax1.ticklabel_format(style='plain', axis='y')
+        
+        # Plot ensemble statistics on right plot
+        ax2.errorbar(cutoffs, avg_gains, yerr=std_gains, marker='o', linewidth=2, 
+                    markersize=8, capsize=5, capthick=2, color='darkblue', label='Ensemble Average ± Std')
+        
+        # Mark optimal cutoff
+        optimal_idx = np.argmax(avg_gains)
+        optimal_cutoff = cutoffs[optimal_idx]
+        optimal_gain = avg_gains[optimal_idx]
+        
+        ax2.scatter([optimal_cutoff], [optimal_gain], color='red', s=200, zorder=5, 
+                   marker='*', label=f'Optimal: {optimal_cutoff} envíos')
+        
+        ax2.axhline(y=0, color='black', linestyle='--', linewidth=1, alpha=0.5)
+        ax2.set_xlabel('Number of Clients', fontsize=12)
+        ax2.set_ylabel('Expected Gain ($)', fontsize=12)
+        ax2.set_title(f'Ensemble Gain - Validation {validation_month}', fontsize=14, fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(fontsize=10)
+        ax2.ticklabel_format(style='plain', axis='y')
+        
+        # Add text with optimal info
+        textstr = f'Optimal Cutoff: {optimal_cutoff}\n'
+        textstr += f'Expected Gain: ${optimal_gain:,.0f}\n'
+        textstr += f'Std Dev: ${std_gains[optimal_idx]:,.0f}\n'
+        textstr += f'Models: {len(pred_cols)}'
+        
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
+        ax2.text(0.05, 0.95, textstr, transform=ax2.transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
+        
+        plt.tight_layout()
+        
+        # Save plot
+        os.makedirs(f"output/{experimento}/validation", exist_ok=True)
+        plot_file = f"output/{experimento}/validation/gain_curve_{validation_month}.png"
+        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"✓ Gain curve saved to: {plot_file}")
+        
+        # Save statistics
+        stats_data = {
+            "cutoff": cutoffs,
+            "avg_gain": avg_gains,
+            "std_gain": std_gains,
+            "n_models": [len(pred_cols)] * len(cutoffs)
+        }
+        
+        df_stats = pl.DataFrame(stats_data)
+        stats_file = f"output/{experimento}/validation/gain_stats_{validation_month}.csv"
+        df_stats.write_csv(stats_file)
+        print(f"✓ Statistics saved to: {stats_file}")
+        
+        # Print summary
+        print(f"\n📊 Validation Gain Summary ({validation_month}):")
+        print(f"   Optimal cutoff: {optimal_cutoff} envíos")
+        print(f"   Expected gain: ${optimal_gain:,.0f}")
+        print(f"   Std deviation: ${std_gains[optimal_idx]:,.0f}")
+        print(f"   Models in ensemble: {len(pred_cols)}")
+    
+    print("\n" + "="*70)
 

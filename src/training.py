@@ -379,6 +379,140 @@ def run_bayesian_optimization(dtrain: lgb.Dataset, df_test: pl.DataFrame,
     return best_params
 
 
+def train_validation_ensemble(df: pl.DataFrame, config: Dict, 
+                             campos_buenos: List[str], best_params: Dict) -> pl.DataFrame:
+    """
+    Train validation ensemble using Optuna's train/test split
+    Returns predictions for validation month (for gain analysis)
+    
+    Args:
+        df: Input DataFrame
+        config: Configuration dictionary
+        campos_buenos: List of feature columns
+        best_params: Best hyperparameters from optimization
+        
+    Returns:
+        DataFrame with predictions for validation month
+    """
+    print("\n" + "="*50)
+    print("TRAINING VALIDATION ENSEMBLE")
+    print("="*50)
+    
+    # Prepare data with binary target
+    df = df.with_columns([
+        pl.when(pl.col("clase_ternaria").is_in(["BAJA+2", "BAJA+1"]))
+        .then(pl.lit(1))
+        .otherwise(pl.lit(0))
+        .alias("clase01")
+    ])
+    
+    # Get training and testing months from Optuna config
+    training_months = config["trainingstrategy"]["training"]
+    testing_months = config["trainingstrategy"]["testing"]
+    undersampling = config["trainingstrategy"]["undersampling"]
+    
+    print(f"Training months: {training_months[-3:]}... (total: {len(training_months)})")
+    print(f"Validation month: {testing_months}")
+    
+    # Add random column for undersampling
+    np.random.seed(config["semilla_primigenia"])
+    azar = np.random.uniform(0, 1, df.shape[0])
+    df = df.with_columns([
+        pl.Series("azar", azar)
+    ])
+    
+    # Mark training records
+    df = df.with_columns([
+        pl.when(
+            (pl.col("foto_mes").is_in(training_months)) &
+            ((pl.col("azar") <= undersampling) | 
+             (pl.col("clase_ternaria").is_in(["BAJA+1", "BAJA+2"])))
+        )
+        .then(pl.lit(1))
+        .otherwise(pl.lit(0))
+        .alias("training")
+    ])
+    
+    # Get training data
+    df_train = df.filter(pl.col("training") == 1)
+    
+    campos_buenos_valid = [col for col in campos_buenos 
+                           if col in df.columns and col not in ["clase_ternaria", "clase01", "azar", "training"]]
+    
+    X_train = df_train.select(campos_buenos_valid).to_numpy()
+    y_train = df_train.select("clase01").to_numpy().ravel()
+    
+    # Create dataset
+    dtrain = lgb.Dataset(X_train, label=y_train, free_raw_data=False,
+                        feature_name=campos_buenos_valid)
+    
+    print(f"Training set: {X_train.shape[0]} rows, {X_train.shape[1]} columns")
+    
+    # Get validation data
+    df_validation = df.filter(pl.col("foto_mes").is_in(testing_months))
+    X_validation = df_validation.select(campos_buenos_valid).to_numpy()
+    
+    print(f"Validation set: {X_validation.shape[0]} rows")
+    
+    # Prepare parameters
+    params = config["lgbm"]["param_fijos"].copy()
+    params.update(best_params)
+    
+    # Generate seeds for ensemble
+    ksemillerio = config["train_final"]["ksemillerio"]
+    np.random.seed(config["semilla_primigenia"])
+    seeds = np.random.randint(100000, 1000000, size=ksemillerio)
+    
+    print(f"Training {ksemillerio} models for validation ensemble...")
+    
+    # Train ensemble and collect predictions
+    all_predictions = []
+    
+    for idx, seed in enumerate(seeds):
+        print(f"  Model {idx+1}/{ksemillerio} (seed={seed})...")
+        
+        params_copy = params.copy()
+        params_copy["seed"] = int(seed)
+        
+        modelo = lgb.train(
+            params_copy,
+            dtrain,
+            num_boost_round=params["num_iterations"],
+            valid_sets=None,
+            callbacks=[lgb.log_evaluation(period=0)]
+        )
+        
+        # Predict on validation set
+        predictions = modelo.predict(X_validation)
+        all_predictions.append(predictions)
+    
+    # Create predictions DataFrame
+    predictions_array = np.array(all_predictions).T  # Shape: (n_samples, n_models)
+    
+    # Build DataFrame with individual predictions
+    pred_df = df_validation.select(["numero_de_cliente", "foto_mes", "clase_ternaria"])
+    
+    # Add individual model predictions
+    for idx, seed in enumerate(seeds):
+        pred_df = pred_df.with_columns([
+            pl.Series(f"pred_seed_{seed}", predictions_array[:, idx])
+        ])
+    
+    # Add average prediction
+    pred_df = pred_df.with_columns([
+        pl.Series("pred_avg", predictions_array.mean(axis=1))
+    ])
+    
+    # Save predictions
+    experimento = config["experimento"]
+    os.makedirs(f"output/{experimento}/validation", exist_ok=True)
+    pred_df.write_parquet(f"output/{experimento}/validation/predicciones_validation.parquet")
+    
+    print(f"\n✓ Validation predictions saved to: output/{experimento}/validation/predicciones_validation.parquet")
+    
+    return pred_df
+
+
 def train_final_models(df: pl.DataFrame, config: Dict, 
                       campos_buenos: List[str], best_params: Dict) -> None:
     """

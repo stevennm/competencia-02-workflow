@@ -23,11 +23,12 @@ from src.feature_engineering import add_intra_month_features, add_historical_fea
 from src.rf_features import add_rf_features
 from src.training import (
     prepare_training_data, 
-    run_bayesian_optimization, 
+    run_bayesian_optimization,
+    train_validation_ensemble,
     train_final_models
 )
 from src.scoring import score_future_data, generate_submission
-from src.gain_analysis import create_gain_curve, create_ensemble_gain_curve
+from src.gain_analysis import create_gain_curve, create_ensemble_gain_curve, create_validation_gain_curve
 
 
 def setup_logging():
@@ -170,36 +171,49 @@ def main():
         PARAM["train_final"]["param_mejores"] = best_params
         
         # =====================================================================
-        # STEP 7: TRAIN FINAL MODELS
+        # STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS
         # =====================================================================
-        print_section("STEP 7: TRAIN FINAL ENSEMBLE")
+        print_section("STEP 7: VALIDATION ENSEMBLE & GAIN ANALYSIS")
+        
+        logger.info("Training validation ensemble (Optuna split)...")
+        validation_pred = train_validation_ensemble(df, PARAM, campos_buenos, best_params)
+        logger.info("Validation ensemble trained")
+        
+        logger.info("Creating validation gain curve...")
+        create_validation_gain_curve(validation_pred, PARAM)
+        logger.info("Validation gain analysis complete")
+        
+        # =====================================================================
+        # STEP 8: TRAIN FINAL MODELS
+        # =====================================================================
+        print_section("STEP 8: TRAIN FINAL ENSEMBLE")
         
         logger.info("Training final ensemble models...")
         train_final_models(df, PARAM, campos_buenos, best_params)
         logger.info("Final models trained successfully")
         
         # =====================================================================
-        # STEP 8: SCORING
+        # STEP 9: SCORING
         # =====================================================================
-        print_section("STEP 8: SCORE FUTURE DATA")
+        print_section("STEP 9: SCORE FUTURE DATA")
         
         logger.info("Scoring future data...")
         df_pred = score_future_data(df, PARAM, campos_buenos)
         logger.info(f"Scored {len(df_pred)} predictions")
         
         # =====================================================================
-        # STEP 9: GENERATE SUBMISSION
+        # STEP 10: GENERATE SUBMISSION
         # =====================================================================
-        print_section("STEP 9: GENERATE KAGGLE SUBMISSION")
+        print_section("STEP 10: GENERATE KAGGLE SUBMISSION")
         
         logger.info("Generating Kaggle submission...")
         generate_submission(df_pred, PARAM, n_envios=11000)
         logger.info(f"Submission file: kaggle/KA{PARAM['experimento']}_11000.csv")
         
         # =====================================================================
-        # STEP 10: GAIN CURVE ANALYSIS (if labels available)
+        # STEP 11: GAIN CURVE ANALYSIS (if labels available)
         # =====================================================================
-        print_section("STEP 10: GAIN CURVE ANALYSIS")
+        print_section("STEP 11: GAIN CURVE ANALYSIS")
         
         logger.info("Creating gain curve analysis...")
         create_gain_curve(df, df_pred, PARAM)

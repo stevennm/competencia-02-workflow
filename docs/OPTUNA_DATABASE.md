@@ -2,7 +2,7 @@
 
 ## Implementation
 
-Optuna optimization results are saved to a **shared SQLite database** in the `db/` directory.
+git stOptuna optimization results are saved to a **shared SQLite database** in the `db/` directory.
 
 ## Features
 
