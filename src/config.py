@@ -4,7 +4,7 @@ Configuration file for the LightGBM workflow with Bayesian Optimization
 
 PARAM = {
     # Experiment configuration
-    "experimento": "semillerio_optuna",
+    "experimento": "semillerio_optuna2_moretrials",
     "semilla_primigenia": 102191,
     
     # Feature Engineering - Random Forest
