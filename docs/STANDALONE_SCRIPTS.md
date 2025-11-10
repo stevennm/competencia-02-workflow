@@ -77,12 +77,28 @@ Runs everything end-to-end: preprocessing, feature engineering, training, optimi
 python run.py
 ```
 
-**Input:** `data/competencia_02_target.parquet`  
-**Output:** Multiple files in `output/` directory
+**Input:** `data/competencia_02_target.parquet` (or intermediate parquet files)  
+**Output:** Multiple files in `output/{experimento}/` directory
 
-**Tip:** To use pre-built datasets, edit `run.py` and uncomment the appropriate lines:
-- Uncomment line 55-56 to load `preprocessed_data.parquet` (skip preprocessing)
-- Uncomment line 80-81 to load `featured_data.parquet` (skip preprocessing + FE)
+**Smart Loading:**
+- If `data/final_dataset.parquet` exists → loads it directly (skips all feature engineering)
+- Else if `data/featured_data.parquet` exists → loads it and adds RF features
+- Else → runs everything from scratch
+
+**What it does:**
+1. Loads data (using smart loading above)
+2. Prepares training/testing data
+3. Runs Bayesian Optimization with Optuna
+4. Trains validation ensemble and analyzes gain on Optuna test set
+5. Trains final ensemble of models
+6. Scores future data
+7. Generates Kaggle submissions
+8. Creates gain curve analysis for future data
+
+**Execution time:** 
+- With `final_dataset.parquet`: ~1-2 hours
+- With `featured_data.parquet`: ~1.5-2.5 hours (adds RF features)
+- From scratch: ~2-3 hours
 
 ---
 
@@ -104,34 +120,33 @@ python run.py
 python run.py
 ```
 
-### Scenario 2: Experimenting with Features
+### Scenario 2: Fast Iteration (Using Cached Data)
 ```bash
-# Preprocess once
-python run_preprocessing.py
+# First run: Generate all intermediate files
+python run.py  # Creates final_dataset.parquet
 
-# Try different feature configurations
-python run_feature_engineering.py  # Edit PARAM in config.py between runs
-
-# Or edit run.py to use preprocessed_data.parquet directly
-# (uncomment lines 55-56 in run.py)
+# Subsequent runs: Automatically uses cached data
+python run.py  # Loads final_dataset.parquet instantly!
 ```
 
-### Scenario 3: Debugging Preprocessing
+### Scenario 3: Experimenting with Features
+```bash
+# Build features once
+python run_preprocessing.py
+python run_feature_engineering.py
+
+# Try different RF configurations
+# Edit config.py, then run.py will load featured_data.parquet and regenerate RF features
+python run.py
+```
+
+### Scenario 4: Debugging Preprocessing
 ```bash
 # Test preprocessing changes
 python run_preprocessing.py
 
 # Verify output
 python -c "import polars as pl; df = pl.read_parquet('data/preprocessed_data.parquet'); print(df.shape, df.columns)"
-```
-
-### Scenario 4: Skip Preprocessing
-```bash
-# If you already have preprocessed_data.parquet
-python run_feature_engineering.py
-
-# Then use featured_data.parquet in run.py
-# (uncomment lines 80-81 in run.py to load it directly)
 ```
 
 ---
@@ -141,8 +156,9 @@ python run_feature_engineering.py
 | File | Created By | Description |
 |------|-----------|-------------|
 | `data/preprocessed_data.parquet` | `run_preprocessing.py` | Cleaned data with clase_ternaria |
-| `data/featured_data.parquet` | `run_feature_engineering.py` | Data with all features added |
-| `output/*` | `run.py` | Models, predictions, submissions |
+| `data/featured_data.parquet` | `run_feature_engineering.py` | Data with historical features |
+| `data/final_dataset.parquet` | `run.py` | Complete dataset with RF features |
+| `output/{experimento}/*` | `run.py` | Models, predictions, submissions |
 
 ---
 

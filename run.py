@@ -120,25 +120,28 @@ def main():
         # print(f"Base features for lags: {len(cols_lagueables)}")
         
         # df = add_historical_features(df, cols_lagueables, PARAM)
-        logger.info("Loading featured data from parquet file")
-        df = pl.read_parquet("data/featured_data.parquet")
-        logger.info(f"Loaded featured data: {df.shape[0]} rows, {df.shape[1]} columns")
+        # logger.info("Loading featured data from parquet file")
+        # df = pl.read_parquet("data/featured_data.parquet")
+        # logger.info(f"Loaded featured data: {df.shape[0]} rows, {df.shape[1]} columns")
         
         # =====================================================================
         # STEP 4: RANDOM FOREST FEATURES
         # =====================================================================
-        print_section("STEP 4: RANDOM FOREST LEAF FEATURES")
+        # print_section("STEP 4: RANDOM FOREST LEAF FEATURES")
         
-        # Update campos_buenos to include all features except identifiers and target
-        campos_buenos = [col for col in df.columns 
-                        if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
+        # # Update campos_buenos to include all features except identifiers and target
+        # campos_buenos = [col for col in df.columns 
+        #                 if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
-        df = add_rf_features(df, PARAM, campos_buenos)
+        # df = add_rf_features(df, PARAM, campos_buenos)
         
-
-        print("Saving final dataset")
-        df.write_parquet("data/final_dataset.parquet")
-        print("Final dataset saved")
+        # print("Saving final dataset")
+        # df.write_parquet("data/final_dataset.parquet")
+        # print("Final dataset saved")
+        
+        logger.info("Loading final dataset from parquet file")
+        df = pl.read_parquet("data/final_dataset.parquet")
+        logger.info(f"Loaded final dataset: {df.shape[0]} rows, {df.shape[1]} columns")
 
         # =====================================================================
         # STEP 5: PREPARE DATA FOR TRAINING
