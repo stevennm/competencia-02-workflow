@@ -76,6 +76,17 @@ def main():
     
     print_section(f"LIGHTGBM WORKFLOW - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
+    # Check if experiment already exists
+    experimento = PARAM['experimento']
+    experiment_dir = Path(f"output/{experimento}")
+    
+    if experiment_dir.exists():
+        error_msg = f"ERROR: Experiment '{experimento}' already exists at output/{experimento}/"
+        print(f"\n❌ {error_msg}")
+        print(f"💡 Change experiment name in config.py or delete the directory")
+        logger.error(error_msg)
+        raise FileExistsError(error_msg)
+    
     # Log experiment configuration
     logger.info(f"Experiment: {PARAM['experimento']}")
     logger.info(f"Seed: {PARAM['semilla_primigenia']}")

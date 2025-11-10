@@ -77,10 +77,11 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     
     print("Random Forest trained successfully")
     
-    # Save model
+    # Save model (experiment-specific path)
     print("Saving model...")
-    os.makedirs("output", exist_ok=True)
-    modelo.save_model("output/modelo.model")
+    experimento = config["experimento"]
+    os.makedirs(f"output/{experimento}", exist_ok=True)
+    modelo.save_model(f"output/{experimento}/modelo.model")
     
     # Get unique periods
     periodos = df.select("foto_mes").unique().sort("foto_mes").to_series().to_list()

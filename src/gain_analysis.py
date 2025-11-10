@@ -93,8 +93,9 @@ def create_gain_curve(df: pl.DataFrame, df_pred: pl.DataFrame, config: Dict) -> 
     print(f"  Optimal cutoff: {gan_max_idx} clients")
     print(f"  Probability at cutoff: {prob[gan_max_idx]:.6f}")
     
-    # Create output directory
-    os.makedirs("output/analysis", exist_ok=True)
+    # Create output directory (experiment-specific)
+    experimento = config["experimento"]
+    os.makedirs(f"output/{experimento}/analysis", exist_ok=True)
     
     # Plot 1: Gain vs Number of Clients (full range)
     plt.figure(figsize=(12, 6))
@@ -142,7 +143,7 @@ def create_gain_curve(df: pl.DataFrame, df_pred: pl.DataFrame, config: Dict) -> 
     plt.legend()
     
     plt.tight_layout()
-    output_file = "output/analysis/gain_curve.png"
+    output_file = f"output/{experimento}/analysis/gain_curve.png"
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     plt.close()
     
@@ -160,8 +161,8 @@ def create_gain_curve(df: pl.DataFrame, df_pred: pl.DataFrame, config: Dict) -> 
     
     if gain_stats:
         df_stats = pl.DataFrame(gain_stats)
-        df_stats.write_csv("output/analysis/gain_by_cutoff.csv")
-        print(f"✓ Gain statistics saved to: output/analysis/gain_by_cutoff.csv")
+        df_stats.write_csv(f"output/{experimento}/analysis/gain_by_cutoff.csv")
+        print(f"✓ Gain statistics saved to: output/{experimento}/analysis/gain_by_cutoff.csv")
         print("\nGain by cutoff:")
         print(df_stats)
 
@@ -179,11 +180,12 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     print("GENERATING ENSEMBLE GAIN CURVE")
     print("="*70)
     
-    # Check if individual predictions file exists
-    pred_file = Path("output/predicciones_ensemble.parquet")
+    # Check if individual predictions file exists (experiment-specific path)
+    experimento = config["experimento"]
+    pred_file = Path(f"output/{experimento}/predicciones_ensemble.parquet")
     if not pred_file.exists():
         print("WARNING: Individual predictions file not found.")
-        print("Run scoring first to generate predicciones_ensemble.parquet")
+        print(f"Run scoring first to generate output/{experimento}/predicciones_ensemble.parquet")
         return
     
     # Load individual predictions
@@ -306,8 +308,8 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     
     plt.tight_layout()
     
-    # Save
-    output_file = "output/analysis/gain_curve_ensemble.png"
+    # Save (experiment-specific path)
+    output_file = f"output/{experimento}/analysis/gain_curve_ensemble.png"
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
     plt.close()
     
@@ -329,8 +331,8 @@ def create_ensemble_gain_curve(df: pl.DataFrame, config: Dict) -> None:
     
     if ensemble_stats:
         df_stats = pl.DataFrame(ensemble_stats)
-        df_stats.write_csv("output/analysis/gain_ensemble_stats.csv")
-        print(f"✓ Ensemble statistics saved to: output/analysis/gain_ensemble_stats.csv")
+        df_stats.write_csv(f"output/{experimento}/analysis/gain_ensemble_stats.csv")
+        print(f"✓ Ensemble statistics saved to: output/{experimento}/analysis/gain_ensemble_stats.csv")
         print("\nEnsemble gain by cutoff:")
         print(df_stats)
 

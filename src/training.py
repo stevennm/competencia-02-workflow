@@ -144,7 +144,7 @@ def calculate_gain_with_meseta(predictions: np.ndarray, gan_values: np.ndarray,
 
 def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame, 
                               test_matrix: np.ndarray, config: Dict,
-                              n_train: int, log_file: str = "output/BO_log.txt"):
+                              n_train: int, log_file: str = None):
     """
     Create Optuna objective function
     
@@ -154,13 +154,14 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
         test_matrix: Testing feature matrix
         config: Configuration dictionary
         n_train: Number of training samples
-        log_file: Path to log file
+        log_file: Path to log file (if None, uses experiment-specific path)
         
     Returns:
         Objective function for Optuna
     """
     gan_values = df_test.select("gan").to_numpy().ravel()
     fixed_params = config["lgbm"]["param_fijos"].copy()
+    experimento = config["experimento"]
     
     # Get semillerio and repe parameters
     ksemillerio = config["hipeparametertuning"].get("ksemillerio", 1)
@@ -173,8 +174,10 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
         total_seeds = ksemillerio * repe
         semillas = np.random.randint(100000, 1000000, size=total_seeds)
     
-    # Initialize log file
-    os.makedirs("output", exist_ok=True)
+    # Initialize log file with experiment-specific path
+    if log_file is None:
+        log_file = f"output/{experimento}/BO_log.txt"
+    os.makedirs(f"output/{experimento}", exist_ok=True)
     if not os.path.exists(log_file):
         with open(log_file, "w") as f:
             f.write("fecha\titer\tnum_iterations\tlearning_rate\tfeature_fraction\t"
@@ -272,13 +275,13 @@ def create_objective_function(dtrain: lgb.Dataset, df_test: pl.DataFrame,
             best_gain["value"] = gain
             best_gain["iter"] = iteration["count"]
             
-            # Save feature importance
+            # Save feature importance (experiment-specific path)
             importance_df = pl.DataFrame({
                 "Feature": modelo.feature_name(),
                 "Gain": modelo.feature_importance(importance_type="gain")
             })
             importance_df = importance_df.sort("Gain", descending=True)
-            importance_df.write_csv(f"output/impo_{iteration['count']}.txt", separator="\t")
+            importance_df.write_csv(f"output/{experimento}/impo_{iteration['count']}.txt", separator="\t")
         
         # Log to file
         timestamp = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -458,13 +461,14 @@ def train_final_models(df: pl.DataFrame, config: Dict,
     # Generate prime numbers for seeds (simplified - just use random large numbers)
     seeds = np.random.randint(100000, 1000000, size=config["train_final"]["ksemillerio"])
     
-    # Create modelitos directory
-    os.makedirs("output/modelitos", exist_ok=True)
+    # Create modelitos directory (experiment-specific)
+    experimento = config["experimento"]
+    os.makedirs(f"output/{experimento}/modelitos", exist_ok=True)
     
     # Train ensemble
     print(f"Training {len(seeds)} models...")
     for idx, seed in enumerate(seeds):
-        model_file = f"output/modelitos/mod_{seed}.txt"
+        model_file = f"output/{experimento}/modelitos/mod_{seed}.txt"
         
         if os.path.exists(model_file):
             print(f"  Model {idx+1}/{len(seeds)} already exists, skipping...")

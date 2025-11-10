@@ -40,11 +40,12 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
     # Prepare feature matrix
     X_future = df_future.select(campos_buenos_valid).to_numpy()
     
-    # Load all models and make predictions
-    model_files = sorted(glob("output/modelitos/mod_*.txt"))
+    # Load all models and make predictions (experiment-specific path)
+    experimento = config["experimento"]
+    model_files = sorted(glob(f"output/{experimento}/modelitos/mod_*.txt"))
     
     if len(model_files) == 0:
-        raise FileNotFoundError("No models found in output/modelitos/ directory!")
+        raise FileNotFoundError(f"No models found in output/{experimento}/modelitos/ directory!")
     
     print(f"Loading {len(model_files)} models...")
     
@@ -70,10 +71,11 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
         pl.Series("prob", predictions_avg)
     ])
     
-    # Save predictions
-    os.makedirs("output", exist_ok=True)
-    print("Saving predictions to output/prediccion.txt...")
-    df_pred.write_csv("output/prediccion.txt", separator="\t")
+    # Save predictions (experiment-specific path)
+    experimento = config["experimento"]
+    os.makedirs(f"output/{experimento}", exist_ok=True)
+    print(f"Saving predictions to output/{experimento}/prediccion.txt...")
+    df_pred.write_csv(f"output/{experimento}/prediccion.txt", separator="\t")
     
     # Save individual predictions for ensemble analysis
     print("Saving individual model predictions...")
@@ -82,8 +84,8 @@ def score_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) 
         df_individual = df_individual.with_columns([
             pl.Series(f"prob_seed_{i+1}", preds)
         ])
-    df_individual.write_parquet("output/predicciones_ensemble.parquet")
-    print("✓ Individual predictions saved to output/predicciones_ensemble.parquet")
+    df_individual.write_parquet(f"output/{experimento}/predicciones_ensemble.parquet")
+    print(f"✓ Individual predictions saved to output/{experimento}/predicciones_ensemble.parquet")
     
     return df_pred
 
