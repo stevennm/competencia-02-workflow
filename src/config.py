@@ -4,7 +4,7 @@ Configuration file for the LightGBM workflow with Bayesian Optimization
 
 PARAM = {
     # Experiment configuration
-    "experimento": "seg-001",
+    "experimento": "semillerio_optuna",
     "semilla_primigenia": 102191,
     
     # Feature Engineering - Random Forest
@@ -49,10 +49,10 @@ PARAM = {
     
     # Hyperparameter Tuning
     "hipeparametertuning": {
-        "BO_iteraciones": 50,  # Number of Bayesian Optimization iterations
+        "BO_iteraciones": 5,  # Number of Bayesian Optimization iterations
         # Multi-seed ensemble during BO (optional, increases robustness but slower)
-        "ksemillerio": 1,  # Number of models with different seeds per trial (1=fast, 5=robust)
-        "repe": 1          # Number of repetitions to average (1=fast, 3=very robust)
+        "ksemillerio": 3,  # Number of models with different seeds per trial (1=fast, 5=robust)
+        "repe": 2          # Number of repetitions to average (1=fast, 3=very robust)
         # Total models per trial = ksemillerio × repe
         # Example: ksemillerio=5, repe=3 → 15 models per trial (15x slower!)
     },

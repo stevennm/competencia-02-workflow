@@ -134,6 +134,11 @@ def main():
         
         df = add_rf_features(df, PARAM, campos_buenos)
         
+
+	print("Saving final dataset")
+	df.write_parquet("data/final_dataset.parquet")
+	print("Final dataset saved")
+
         # =====================================================================
         # STEP 5: PREPARE DATA FOR TRAINING
         # =====================================================================
