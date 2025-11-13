@@ -10,7 +10,6 @@ import polars as pl
 
 from src.preprocessing import (
     load_data,
-    generate_clase_ternaria,
     eliminate_features,
     data_quality_fixes,
     data_drifting_correction
@@ -43,16 +42,13 @@ def main():
         print_section("STEP 1: LOAD DATA")
         df = load_data(input_file)
         
-        print_section("STEP 2: GENERATE CLASE_TERNARIA")
-        df = generate_clase_ternaria(df)
-        
-        print_section("STEP 3: ELIMINATE FEATURES")
+        print_section("STEP 2: ELIMINATE FEATURES")
         df = eliminate_features(df)
         
-        print_section("STEP 4: DATA QUALITY FIXES (MICE)")
+        print_section("STEP 3: DATA QUALITY FIXES (MICE)")
         df = data_quality_fixes(df)
         
-        print_section("STEP 5: DATA DRIFTING CORRECTION (IPC)")
+        print_section("STEP 4: DATA DRIFTING CORRECTION (IPC)")
         df = data_drifting_correction(df)
         
         # =====================================================================
@@ -76,7 +72,8 @@ def main():
         print_section("PREPROCESSING COMPLETED SUCCESSFULLY")
         print(f"\nExecution time: {minutes:02d}m {seconds:02d}s")
         print(f"Output file: {output_file}")
-        print(f"\nNext step: Run 'python run_feature_engineering.py' to add features")
+        print(f"\nNote: This assumes clase_ternaria already exists in the input data")
+        print(f"Next step: Run 'python run_feature_engineering.py' to add features")
         
         return 0
         
