@@ -130,7 +130,14 @@ PARAM = {
         
         # Training strategy for zLightGBM
         "train_final": {
-            "training": [202101, 202102, 202103, 202104],  # From notebook
+           "training": [
+            201901, 
+            # 201902, 201903, 201904, 201905, 201906,
+            # 201907, 201908, 201909, 201910, 201911, 201912,
+            # 202001, 202002, 202003, 202004, 202005, 202006,
+            # 202007, 202008, 202009, 202010, 202011, 202012,
+            # 202101, 202102, 202103, 202104 #, 202105, 202106
+            ],
             "future": [202106],
             "undersampling": 0.10,  # More conservative (50% vs 10%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
