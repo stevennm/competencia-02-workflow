@@ -29,6 +29,7 @@ from src.training import (
 )
 from src.scoring import score_future_data, generate_submission
 from src.gain_analysis import create_gain_curve, create_ensemble_gain_curve, create_validation_gain_curve
+from src.bucket_utils import get_bucket_info, sync_output_to_bucket
 
 
 def setup_logging():
@@ -89,10 +90,63 @@ def main():
         raise FileExistsError(error_msg)
     
     # Log experiment configuration
+    bo_iterations = PARAM["hipeparametertuning"]["BO_iteraciones"]
+    
+    logger.info("="*70)
+    logger.info("EXPERIMENT CONFIGURATION")
+    logger.info("="*70)
     logger.info(f"Experiment: {PARAM['experimento']}")
     logger.info(f"Seed: {PARAM['semilla_primigenia']}")
+    logger.info(f"Mode: {'Bayesian Optimization' if bo_iterations > 0 else 'Pre-configured hyperparameters'}")
+    logger.info("")
+    logger.info("Training Strategy (BO):")
+    logger.info(f"  Training months: {PARAM['trainingstrategy']['training']}")
+    logger.info(f"  Testing months: {PARAM['trainingstrategy']['testing']}")
+    logger.info(f"  Undersampling: {PARAM['trainingstrategy']['undersampling']} ({PARAM['trainingstrategy']['undersampling']*100:.0f}%)")
+    logger.info("")
+    logger.info("Final Training Strategy:")
+    logger.info(f"  Training months: {PARAM['train_final']['training']}")
+    logger.info(f"  Future months: {PARAM['train_final']['future']}")
+    logger.info(f"  Undersampling: {PARAM['train_final']['undersampling']} ({PARAM['train_final']['undersampling']*100:.0f}%)")
+    logger.info(f"  Models in ensemble: {PARAM['train_final']['ksemillerio']}")
+    logger.info("")
+    logger.info("Hyperparameter Tuning:")
+    logger.info(f"  BO iterations: {bo_iterations}")
+    if bo_iterations > 0:
+        logger.info(f"  ksemillerio (models per trial): {PARAM['hipeparametertuning']['ksemillerio']}")
+        logger.info(f"  repe (repetitions): {PARAM['hipeparametertuning']['repe']}")
+        logger.info(f"  Total models per trial: {PARAM['hipeparametertuning']['ksemillerio'] * PARAM['hipeparametertuning']['repe']}")
+    else:
+        logger.info(f"  Using pre-configured params: {PARAM['train_final']['param_mejores']}")
+    logger.info("")
+    logger.info("Feature Engineering:")
+    logger.info(f"  RF features: {PARAM['FE_rf']['arbolitos']} trees")
+    logger.info(f"  Historical features: ventana={PARAM['FE_hist']['Tendencias']['ventana']}")
+    logger.info("="*70)
+    
     print(f"\nExperiment: {PARAM['experimento']}")
     print(f"Seed: {PARAM['semilla_primigenia']}")
+    print(f"Mode: {'Bayesian Optimization' if bo_iterations > 0 else 'Pre-configured hyperparameters'}")
+    print(f"\n📊 Configuration:")
+    print(f"  BO iterations: {bo_iterations}")
+    print(f"  Training months (BO): {len(PARAM['trainingstrategy']['training'])} months")
+    print(f"  Training months (Final): {len(PARAM['train_final']['training'])} months")
+    print(f"  Future months: {PARAM['train_final']['future']}")
+    print(f"  Final ensemble: {PARAM['train_final']['ksemillerio']} models")
+    
+    # Log bucket configuration
+    bucket_info = get_bucket_info(PARAM)
+    if bucket_info["enabled"]:
+        logger.info("")
+        logger.info("Bucket Configuration:")
+        logger.info(f"  Enabled: Yes")
+        logger.info(f"  Base path: {bucket_info['base_path']}")
+        logger.info(f"  Exp path: {bucket_info['exp_path']}")
+        logger.info(f"  Bucket exists: {bucket_info['exists']}")
+        print(f"\n💾 Bucket: {bucket_info['base_path']}")
+    else:
+        logger.info("Bucket: Disabled")
+        print(f"\n💾 Bucket: Disabled")
     
     try:
         # =====================================================================
@@ -141,7 +195,14 @@ def main():
         
         logger.info("Loading final dataset from parquet file")
         df = pl.read_parquet("data/final_dataset.parquet")
-        logger.info(f"Loaded final dataset: {df.shape[0]} rows, {df.shape[1]} columns")
+        logger.info(f"Loaded final dataset: {df.shape[0]:,} rows, {df.shape[1]:,} columns")
+        logger.info(f"Columns: {len(df.columns)}")
+        
+        # Log month distribution
+        month_counts = df.group_by("foto_mes").agg(pl.count().alias("count")).sort("foto_mes")
+        logger.info("Month distribution:")
+        for row in month_counts.iter_rows():
+            logger.info(f"  {row[0]}: {row[1]:,} records")
 
         # =====================================================================
         # STEP 5: PREPARE DATA FOR TRAINING
@@ -152,8 +213,10 @@ def main():
         campos_buenos = [col for col in df.columns 
                         if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]]
         
-        logger.info(f"Total features: {len(campos_buenos)}")
-        print(f"Total features: {len(campos_buenos)}")
+        logger.info(f"Total features: {len(campos_buenos):,}")
+        logger.info(f"  First 5 features: {campos_buenos[:5]}")
+        logger.info(f"  Last 5 features: {campos_buenos[-5:]}")
+        print(f"Total features: {len(campos_buenos):,}")
         
         logger.info("Preparing training data...")
         dtrain, df_test, test_matrix, campos_buenos_valid, n_train = prepare_training_data(
@@ -170,8 +233,13 @@ def main():
             print_section("STEP 6: BAYESIAN OPTIMIZATION WITH OPTUNA")
             
             logger.info("Starting Bayesian optimization...")
+            logger.info(f"BO iterations: {bo_iterations}")
+            logger.info(f"Training months: {PARAM['trainingstrategy']['training']}")
+            logger.info(f"Testing months: {PARAM['trainingstrategy']['testing']}")
             best_params = run_bayesian_optimization(dtrain, df_test, test_matrix, PARAM, n_train)
-            logger.info(f"Best parameters found: {best_params}")
+            logger.info(f"Best parameters found:")
+            for param, value in best_params.items():
+                logger.info(f"  {param}: {value}")
             
             # Store best parameters
             PARAM["train_final"]["param_mejores"] = best_params
@@ -208,6 +276,10 @@ def main():
         print_section("STEP 8: TRAIN FINAL ENSEMBLE")
         
         logger.info("Training final ensemble models...")
+        logger.info(f"Training months: {PARAM['train_final']['training']}")
+        logger.info(f"Undersampling: {PARAM['train_final']['undersampling']}")
+        logger.info(f"Number of models: {PARAM['train_final']['ksemillerio']}")
+        logger.info(f"Hyperparameters: {best_params}")
         train_final_models(df, PARAM, campos_buenos, best_params)
         logger.info("Final models trained successfully")
         
@@ -217,17 +289,25 @@ def main():
         print_section("STEP 9: SCORE FUTURE DATA")
         
         logger.info("Scoring future data...")
+        logger.info(f"Future months: {PARAM['train_final']['future']}")
         df_pred = score_future_data(df, PARAM, campos_buenos)
-        logger.info(f"Scored {len(df_pred)} predictions")
+        logger.info(f"Scored {len(df_pred):,} predictions")
+        logger.info(f"Prediction stats:")
+        logger.info(f"  Min prob: {df_pred['prob'].min():.6f}")
+        logger.info(f"  Max prob: {df_pred['prob'].max():.6f}")
+        logger.info(f"  Mean prob: {df_pred['prob'].mean():.6f}")
+        logger.info(f"  Median prob: {df_pred['prob'].median():.6f}")
         
         # =====================================================================
         # STEP 10: GENERATE SUBMISSION
         # =====================================================================
         print_section("STEP 10: GENERATE KAGGLE SUBMISSION")
         
+        n_envios = 11000
         logger.info("Generating Kaggle submission...")
-        generate_submission(df_pred, PARAM, n_envios=11000)
-        logger.info(f"Submission file: kaggle/KA{PARAM['experimento']}_11000.csv")
+        logger.info(f"Cutoff: {n_envios:,} envíos")
+        generate_submission(df_pred, PARAM, n_envios=n_envios)
+        logger.info(f"Submission file: output/kaggle/KA{PARAM['experimento']}_{n_envios}.csv")
         
         # =====================================================================
         # STEP 11: GAIN CURVE ANALYSIS (if labels available)
@@ -241,6 +321,15 @@ def main():
         logger.info("Creating ensemble gain curve...")
         create_ensemble_gain_curve(df, PARAM)
         logger.info("Ensemble gain curve complete")
+        
+        # =====================================================================
+        # STEP 12: SYNC TO BUCKET
+        # =====================================================================
+        if PARAM.get("bucket", {}).get("enabled", False):
+            print_section("STEP 12: SYNC TO BUCKET")
+            logger.info("Syncing outputs to bucket...")
+            sync_output_to_bucket(PARAM, logger)
+            logger.info("Bucket sync complete")
         
         # =====================================================================
         # COMPLETION
