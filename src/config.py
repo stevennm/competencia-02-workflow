@@ -2,10 +2,12 @@
 Configuration file for zLightGBM workflow
 """
 
+#SEMILLAS: 123479, 123491, 123493, 123499, 123503
+
 PARAM = {
     # Experiment configuration
-    "experimento": "test_all_months_all_data_low_cabaritos",
-    "semilla_primigenia": 102191,
+    "experimento": "model_until_202012",
+    "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
     "bucket": {
@@ -28,9 +30,9 @@ PARAM = {
             201907, 201908, 201909, 201910, 201911, 201912,
             202001, 202002, 202003, 202004, 202005, 202006,
             202007, 202008, 202009, 202010, 202011, 202012,
-            202101, 202102, 202103, 202104
+            #202101, 202102, 202103, 202104
             ], # From notebook
-            "future": [202106],
+            "future": [202102],
             "undersampling": 0.10,  # Conservative (50%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
         },
