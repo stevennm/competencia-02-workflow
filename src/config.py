@@ -18,7 +18,7 @@ PARAM = {
     # zLightGBM Configuration
     # ========================================================================
     "zlgbm": {
-        "qcanaritos": 50,  # Number of canary features (must match 'canaritos' param)
+        "qcanaritos": 10,  # Number of canary features (must match 'canaritos' param)
         
         # Training strategy for zLightGBM
         "train_final": {
@@ -58,7 +58,7 @@ PARAM = {
             "feature_fraction": 0.50,  # Balanced
             
             # zLightGBM specific (NEW!)
-            "canaritos": 50,         # MUST match qcanaritos above
+            "canaritos": 5,         # MUST match qcanaritos above
             "gradient_bound": 0.1     # Adaptive learning rate (default)
         }
     }
