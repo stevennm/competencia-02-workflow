@@ -124,9 +124,8 @@ def main():
         logger.info("")
         logger.info("Bucket Configuration:")
         logger.info(f"  Enabled: Yes")
-        logger.info(f"  Base path: {bucket_info['base_path']}")
-        logger.info(f"  Exp path: {bucket_info['exp_path']}")
-        logger.info(f"  Bucket exists: {bucket_info['exists']}")
+        logger.info(f"  Path: {bucket_info['base_path']}")
+        logger.info(f"  Exists: {bucket_info['exists']}")
         print(f"\n💾 Bucket: {bucket_info['base_path']}")
     else:
         logger.info("Bucket: Disabled")
