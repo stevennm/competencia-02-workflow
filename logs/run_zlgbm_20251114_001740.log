@@ -1,0 +1,131 @@
+2025-11-14 00:17:40,174 - INFO - Log file: logs/run_zlgbm_20251114_001740.log
+2025-11-14 00:17:40,175 - INFO - ======================================================================
+2025-11-14 00:17:40,175 - INFO -   zLightGBM WORKFLOW - 2025-11-14 00:17:40
+2025-11-14 00:17:40,175 - INFO - ======================================================================
+2025-11-14 00:17:40,175 - INFO - ======================================================================
+2025-11-14 00:17:40,175 - INFO - EXPERIMENT CONFIGURATION
+2025-11-14 00:17:40,175 - INFO - ======================================================================
+2025-11-14 00:17:40,175 - INFO - Experiment: zlgbm_test_zlgbm
+2025-11-14 00:17:40,175 - INFO - Seed: 102191
+2025-11-14 00:17:40,175 - INFO - Mode: zLightGBM (no Bayesian Optimization)
+2025-11-14 00:17:40,175 - INFO - 
+2025-11-14 00:17:40,175 - INFO - Training Strategy:
+2025-11-14 00:17:40,175 - INFO -   Training months: [201901]
+2025-11-14 00:17:40,175 - INFO -   Future months: [202106]
+2025-11-14 00:17:40,175 - INFO -   Undersampling: 0.1 (10%)
+2025-11-14 00:17:40,175 - INFO -   Models in ensemble: 1
+2025-11-14 00:17:40,175 - INFO - 
+2025-11-14 00:17:40,175 - INFO - zLightGBM Parameters:
+2025-11-14 00:17:40,175 - INFO -   Canaries: 50
+2025-11-14 00:17:40,175 - INFO -   gradient_bound: 0.1
+2025-11-14 00:17:40,175 - INFO -   learning_rate: 1.0
+2025-11-14 00:17:40,175 - INFO -   feature_fraction: 0.5
+2025-11-14 00:17:40,175 - INFO -   min_data_in_leaf: 20
+2025-11-14 00:17:40,175 - INFO -   max_bin: 31
+2025-11-14 00:17:40,175 - INFO -   num_iterations (max): 9999
+2025-11-14 00:17:40,175 - INFO -   num_leaves (max): 999
+2025-11-14 00:17:40,175 - INFO - ======================================================================
+2025-11-14 00:17:40,176 - INFO - 
+2025-11-14 00:17:40,176 - INFO - Bucket Configuration:
+2025-11-14 00:17:40,176 - INFO -   Enabled: Yes
+2025-11-14 00:17:40,176 - INFO -   Base path: /home/rstevenmartins/buckets/b1
+2025-11-14 00:17:40,176 - INFO -   Exp path: /home/rstevenmartins/buckets/b1/exp
+2025-11-14 00:17:40,176 - INFO -   Bucket exists: True
+2025-11-14 00:17:40,176 - INFO - ======================================================================
+2025-11-14 00:17:40,176 - INFO -   STEP 1: LOAD PREPROCESSED DATA
+2025-11-14 00:17:40,176 - INFO - ======================================================================
+2025-11-14 00:17:45,487 - INFO - Loaded data: 4,717,958 rows, 2,028 columns
+2025-11-14 00:17:45,487 - INFO - Columns: 2028
+2025-11-14 00:17:45,752 - INFO - Month distribution:
+2025-11-14 00:17:45,753 - INFO -   201901: 124,273 records
+2025-11-14 00:17:45,753 - INFO -   201902: 125,401 records
+2025-11-14 00:17:45,753 - INFO -   201903: 125,967 records
+2025-11-14 00:17:45,753 - INFO -   201904: 126,538 records
+2025-11-14 00:17:45,753 - INFO -   201905: 127,202 records
+2025-11-14 00:17:45,753 - INFO -   201906: 128,734 records
+2025-11-14 00:17:45,753 - INFO -   201907: 130,268 records
+2025-11-14 00:17:45,753 - INFO -   201908: 132,143 records
+2025-11-14 00:17:45,753 - INFO -   201909: 133,757 records
+2025-11-14 00:17:45,753 - INFO -   201910: 136,010 records
+2025-11-14 00:17:45,753 - INFO -   201911: 137,996 records
+2025-11-14 00:17:45,753 - INFO -   201912: 139,980 records
+2025-11-14 00:17:45,753 - INFO -   202001: 143,464 records
+2025-11-14 00:17:45,753 - INFO -   202002: 146,660 records
+2025-11-14 00:17:45,753 - INFO -   202003: 148,798 records
+2025-11-14 00:17:45,753 - INFO -   202004: 149,350 records
+2025-11-14 00:17:45,754 - INFO -   202005: 150,792 records
+2025-11-14 00:17:45,754 - INFO -   202006: 153,102 records
+2025-11-14 00:17:45,754 - INFO -   202007: 154,984 records
+2025-11-14 00:17:45,754 - INFO -   202008: 156,461 records
+2025-11-14 00:17:45,754 - INFO -   202009: 157,805 records
+2025-11-14 00:17:45,754 - INFO -   202010: 159,169 records
+2025-11-14 00:17:45,754 - INFO -   202011: 160,250 records
+2025-11-14 00:17:45,754 - INFO -   202012: 160,997 records
+2025-11-14 00:17:45,754 - INFO -   202101: 161,527 records
+2025-11-14 00:17:45,754 - INFO -   202102: 162,155 records
+2025-11-14 00:17:45,754 - INFO -   202103: 163,109 records
+2025-11-14 00:17:45,754 - INFO -   202104: 163,418 records
+2025-11-14 00:17:45,754 - INFO -   202105: 163,917 records
+2025-11-14 00:17:45,754 - INFO -   202106: 164,313 records
+2025-11-14 00:17:45,754 - INFO -   202107: 164,596 records
+2025-11-14 00:17:45,754 - INFO -   202108: 164,822 records
+2025-11-14 00:17:45,754 - INFO - ======================================================================
+2025-11-14 00:17:45,754 - INFO -   STEP 2: ADD CANARY FEATURES
+2025-11-14 00:17:45,754 - INFO - ======================================================================
+2025-11-14 00:17:47,723 - INFO - Added 50 canaries
+2025-11-14 00:17:47,723 - INFO - ======================================================================
+2025-11-14 00:17:47,723 - INFO -   STEP 3: PREPARE FEATURES
+2025-11-14 00:17:47,723 - INFO - ======================================================================
+2025-11-14 00:17:47,723 - INFO - Total features: 2,075
+2025-11-14 00:17:47,723 - INFO -   Canaries: 50
+2025-11-14 00:17:47,723 - INFO -   Real features: 2,025
+2025-11-14 00:17:47,723 - INFO -   First 5 features: ['canarito_1', 'canarito_2', 'canarito_3', 'canarito_4', 'canarito_5']
+2025-11-14 00:17:47,723 - INFO -   Last 5 features: ['rf_015_015', 'rf_018_000', 'rf_018_005', 'rf_010_004', 'rf_018_004']
+2025-11-14 00:17:47,723 - INFO - ======================================================================
+2025-11-14 00:17:47,723 - INFO -   STEP 4: TRAIN zLightGBM MODEL
+2025-11-14 00:17:47,723 - INFO - ======================================================================
+2025-11-14 00:17:47,723 - INFO - Training zLightGBM model...
+2025-11-14 00:17:47,723 - INFO - Training months: [201901]
+2025-11-14 00:17:47,724 - INFO - Undersampling: 0.1
+2025-11-14 00:18:05,264 - INFO - Model trained successfully
+2025-11-14 00:18:05,264 - INFO - ======================================================================
+2025-11-14 00:18:05,264 - INFO -   STEP 5: SCORE FUTURE DATA
+2025-11-14 00:18:05,264 - INFO - ======================================================================
+2025-11-14 00:18:05,264 - INFO - Scoring future data...
+2025-11-14 00:18:05,264 - INFO - Future months: [202106]
+2025-11-14 00:18:07,044 - INFO - Scored 164,313 predictions
+2025-11-14 00:18:07,045 - INFO - Prediction stats:
+2025-11-14 00:18:07,045 - INFO -   Min prob: 0.001389
+2025-11-14 00:18:07,045 - INFO -   Max prob: 0.983512
+2025-11-14 00:18:07,045 - INFO -   Mean prob: 0.061274
+2025-11-14 00:18:07,046 - INFO -   Median prob: 0.016881
+2025-11-14 00:18:07,046 - INFO - ======================================================================
+2025-11-14 00:18:07,046 - INFO -   STEP 6: GENERATE KAGGLE SUBMISSION
+2025-11-14 00:18:07,046 - INFO - ======================================================================
+2025-11-14 00:18:07,046 - INFO - Generating Kaggle submission...
+2025-11-14 00:18:07,046 - INFO - Cutoff: 11,000 envíos
+2025-11-14 00:18:07,058 - INFO - Submission file: output/kaggle/KAzlgbm_test_zlgbm_11000.csv
+2025-11-14 00:18:07,058 - INFO - ======================================================================
+2025-11-14 00:18:07,058 - INFO -   STEP 7: SYNC TO BUCKET
+2025-11-14 00:18:07,058 - INFO - ======================================================================
+2025-11-14 00:18:07,058 - INFO - Syncing outputs to bucket...
+2025-11-14 00:18:07,058 - INFO - ======================================================================
+2025-11-14 00:18:07,058 - INFO - SYNCING TO BUCKET
+2025-11-14 00:18:07,058 - INFO - ======================================================================
+2025-11-14 00:18:07,268 - ERROR - Failed to copy experiment to bucket: [Errno 13] Permission denied: '/home/rstevenmartins/buckets/b1/exp/zlgbm_test_zlgbm'
+2025-11-14 00:18:07,414 - ERROR - Failed to copy to bucket: output/kaggle → /home/rstevenmartins/buckets/b1/exp/kaggle: [Errno 13] Permission denied: '/home/rstevenmartins/buckets/b1/exp/kaggle'
+2025-11-14 00:18:07,553 - ERROR - ERROR: [Errno 13] Permission denied: '/home/rstevenmartins/buckets/b1/logs'
+2025-11-14 00:18:07,553 - ERROR - ======================================================================
+2025-11-14 00:18:07,555 - ERROR - Full traceback:
+2025-11-14 00:18:07,556 - ERROR - Traceback (most recent call last):
+  File "/home/rstevenmartins/workflow-jueves-python/run_zlgbm.py", line 249, in main
+    sync_output_to_bucket(PARAM, logger)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/rstevenmartins/workflow-jueves-python/src/bucket_utils.py", line 196, in sync_output_to_bucket
+    bucket_logs.mkdir(parents=True, exist_ok=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rstevenmartins/.local/share/uv/python/cpython-3.13.8-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py", line 722, in mkdir
+    os.mkdir(self, mode)
+    ~~~~~~~~^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/home/rstevenmartins/buckets/b1/logs'
+
