@@ -4,7 +4,7 @@ Configuration file for the LightGBM workflow with Bayesian Optimization
 
 PARAM = {
     # Experiment configuration
-    "experimento": "sin_pandemia_conparamsexp2",
+    "experimento": "zlgbm_test",
     "semilla_primigenia": 102191,
     
     # Bucket configuration (for VM storage)
@@ -126,7 +126,7 @@ PARAM = {
     # zLightGBM Configuration (alternative to Bayesian Optimization)
     # ========================================================================
     "zlgbm": {
-        "qcanaritos": 100,  # Number of canary features (must match 'canaritos' param)
+        "qcanaritos": 50,  # Number of canary features (must match 'canaritos' param)
         
         # Training strategy for zLightGBM
         "train_final": {
@@ -166,7 +166,7 @@ PARAM = {
             "feature_fraction": 0.50,  # Balanced
             
             # zLightGBM specific (NEW!)
-            "canaritos": 100,         # MUST match qcanaritos above
+            "canaritos": 50,         # MUST match qcanaritos above
             "gradient_bound": 0.1     # Adaptive learning rate (default)
         }
     }
