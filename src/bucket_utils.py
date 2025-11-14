@@ -122,15 +122,15 @@ def copy_experiment_to_bucket(experimento: str, config: Dict,
             logger.warning(f"Experiment output not found: {source_dir}")
         return False
     
-    # Copy to bucket under exp/ subdirectory
-    bucket_dest = get_bucket_path(config, "exp")
-    if bucket_dest is None:
-        return False
-    
-    bucket_dest.mkdir(parents=True, exist_ok=True)
-    dest_dir = bucket_dest / experimento
-    
     try:
+        # Copy to bucket under exp/ subdirectory
+        bucket_dest = get_bucket_path(config, "exp")
+        if bucket_dest is None:
+            return False
+        
+        bucket_dest.mkdir(parents=True, exist_ok=True)
+        dest_dir = bucket_dest / experimento
+        
         if dest_dir.exists():
             shutil.rmtree(dest_dir)
         
@@ -143,6 +143,12 @@ def copy_experiment_to_bucket(experimento: str, config: Dict,
         
         return True
         
+    except PermissionError as e:
+        if logger:
+            logger.warning(f"Permission denied copying to bucket: {e}")
+        else:
+            print(f"⚠ Permission denied copying to bucket: {e}")
+        return False
     except Exception as e:
         if logger:
             logger.error(f"Failed to copy experiment to bucket: {e}")
@@ -186,19 +192,34 @@ def sync_output_to_bucket(config: Dict, logger: Optional[logging.Logger] = None)
     # Copy kaggle directory if it exists
     kaggle_dir = Path("output/kaggle")
     if kaggle_dir.exists():
-        copy_to_bucket(str(kaggle_dir), config, "exp", logger)
+        try:
+            copy_to_bucket(str(kaggle_dir), config, "exp", logger)
+        except Exception as e:
+            if logger:
+                logger.warning(f"Could not copy kaggle directory: {e}")
     
     # Copy logs directory (optional)
     logs_dir = Path("logs")
     if logs_dir.exists():
-        bucket_logs = get_bucket_path(config, "logs")
-        if bucket_logs:
-            bucket_logs.mkdir(parents=True, exist_ok=True)
-            # Copy only the latest log file
-            log_files = sorted(logs_dir.glob("*.log"), key=lambda x: x.stat().st_mtime, reverse=True)
-            if log_files:
-                latest_log = log_files[0]
-                copy_to_bucket(str(latest_log), config, "logs", logger)
+        try:
+            bucket_logs = get_bucket_path(config, "logs")
+            if bucket_logs:
+                bucket_logs.mkdir(parents=True, exist_ok=True)
+                # Copy only the latest log file
+                log_files = sorted(logs_dir.glob("*.log"), key=lambda x: x.stat().st_mtime, reverse=True)
+                if log_files:
+                    latest_log = log_files[0]
+                    copy_to_bucket(str(latest_log), config, "logs", logger)
+        except PermissionError as e:
+            if logger:
+                logger.warning(f"Permission denied copying logs to bucket: {e}")
+            else:
+                print(f"⚠ Permission denied copying logs to bucket")
+        except Exception as e:
+            if logger:
+                logger.warning(f"Could not copy logs to bucket: {e}")
+            else:
+                print(f"⚠ Could not copy logs to bucket: {e}")
     
     if logger:
         logger.info("="*70)
