@@ -9,7 +9,7 @@ PARAM = {
     
     # Bucket configuration (for VM storage)
     "bucket": {
-        "enabled": False,  # Set to True to enable bucket copying in VM
+        "enabled": True,  # Set to True to enable bucket copying in VM
         "base_path": "~/buckets/b1",  # Base bucket path (change as needed)
         "copy_on_create": True,  # Copy files immediately after creation
     },
@@ -18,13 +18,20 @@ PARAM = {
     # zLightGBM Configuration
     # ========================================================================
     "zlgbm": {
-        "qcanaritos": 100,  # Number of canary features (must match 'canaritos' param)
+        "qcanaritos": 50,  # Number of canary features (must match 'canaritos' param)
         
         # Training strategy for zLightGBM
         "train_final": {
-            "training": [202101, 202102, 202103, 202104],  # From notebook
+            "training": [
+            201901, 
+            #201902, 201903, 201904, 201905, 201906,
+            #201907, 201908, 201909, 201910, 201911, 201912,
+            #202001, 202002, 202003, 202004, 202005, 202006,
+            #202007, 202008, 202009, 202010, 202011, 202012,
+            #202101, 202102, 202103, 202104
+            ], # From notebook
             "future": [202106],
-            "undersampling": 0.50,  # Conservative (50%)
+            "undersampling": 0.10,  # Conservative (50%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
         },
         
@@ -51,7 +58,7 @@ PARAM = {
             "feature_fraction": 0.50,  # Balanced
             
             # zLightGBM specific (NEW!)
-            "canaritos": 100,         # MUST match qcanaritos above
+            "canaritos": 50,         # MUST match qcanaritos above
             "gradient_bound": 0.1     # Adaptive learning rate (default)
         }
     }
