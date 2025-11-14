@@ -9,7 +9,7 @@ PARAM = {
     
     # Bucket configuration (for VM storage)
     "bucket": {
-        "enabled": True,  # Set to True to enable bucket copying in VM
+        "enabled": False,  # Set to True to enable bucket copying in VM
         "base_path": "~/buckets/b1",  # Base bucket path (change as needed)
         "copy_on_create": True,  # Copy files immediately after creation
     },
