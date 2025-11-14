@@ -53,5 +53,5 @@ output/modelitos
 
 
 output/test_all_months_all_data_zlgbm/zmodelo.txt
-output/test_all_months_all_data_zlgbm/tb_arboles.txt
-output/test_all_months_all_data_zlgbm/zmodelo.txt
+**/tb_arboles.txt
+**/zmodelo.txt

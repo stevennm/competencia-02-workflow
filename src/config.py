@@ -4,7 +4,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "test_all_months_all_data",
+    "experimento": "test_all_months_all_data_low_cabaritos",
     "semilla_primigenia": 102191,
     
     # Bucket configuration (for VM storage)
@@ -18,7 +18,7 @@ PARAM = {
     # zLightGBM Configuration
     # ========================================================================
     "zlgbm": {
-        "qcanaritos": 10,  # Number of canary features (must match 'canaritos' param)
+        "qcanaritos": 5,  # Number of canary features (must match 'canaritos' param)
         
         # Training strategy for zLightGBM
         "train_final": {
