@@ -177,12 +177,16 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     """
     Fix data quality issues using MICE (Multiple Imputation by Chained Equations)
     
-    Specifically targets 202006 which has many zero values that should be imputed.
+    Targets months with data quality issues:
+    - 201905: Many zero values that should be imputed
+    - 201910: Many zero values that should be imputed
+    - 202006: Many zero values that should be imputed (COVID period)
+    
     Uses sklearn's IterativeImputer which implements a MICE-like algorithm.
     
     Strategy:
-    1. Identify numeric columns with suspicious zeros in 202006
-    2. Treat zeros as missing values for 202006 only
+    1. Identify numeric columns with suspicious zeros in problematic months
+    2. Treat zeros as missing values for those months only
     3. Use MICE to impute based on:
        - Customer's values in other months
        - Relationships between features
@@ -194,12 +198,20 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with fixed data quality issues
     """
-    print("\n[DATA QUALITY] Fixing 202006 with MICE imputation...")
+    print("\n[DATA QUALITY] Fixing problematic months with MICE imputation...")
     
-    # Check if 202006 exists in the dataset
-    if 202006 not in df.select("foto_mes").unique().to_series().to_list():
-        print("  202006 not found in dataset, skipping...")
+    # Define problematic months
+    problematic_months = [201905, 201910, 202006]
+    
+    # Check which problematic months exist in the dataset
+    available_months = df.select("foto_mes").unique().to_series().to_list()
+    months_to_fix = [m for m in problematic_months if m in available_months]
+    
+    if not months_to_fix:
+        print(f"  None of the problematic months {problematic_months} found in dataset, skipping...")
         return df
+    
+    print(f"  Target months for MICE: {months_to_fix}")
     
     # Identify numeric columns (exclude identifiers and target)
     exclude_cols = ["numero_de_cliente", "foto_mes", "clase_ternaria"]
@@ -216,26 +228,46 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     
     print(f"  Processing {len(numeric_cols)} numeric columns...")
     
-    # Analyze 202006 for problematic columns
-    df_202006 = df.filter(pl.col("foto_mes") == 202006)
-    
-    # Find columns where >80% of values are 0 in 202006 (more selective)
+    # Analyze problematic months for columns with many zeros
     zero_ratios = {}
-    for col in numeric_cols:
-        zero_count = df_202006.filter(pl.col(col) == 0).shape[0]
-        zero_ratio = zero_count / df_202006.shape[0]
-        if zero_ratio > 0.8:  # More than 80% zeros (was 50%)
-            zero_ratios[col] = zero_ratio
+    for month in months_to_fix:
+        df_month = df.filter(pl.col("foto_mes") == month)
+        
+        # Find columns where >80% of values are 0 in this month
+        for col in numeric_cols:
+            zero_count = df_month.filter(pl.col(col) == 0).shape[0]
+            zero_ratio = zero_count / df_month.shape[0]
+            if zero_ratio > 0.8:  # More than 80% zeros
+                # Store with month info
+                key = f"{col}_{month}"
+                zero_ratios[key] = {
+                    'col': col,
+                    'month': month,
+                    'ratio': zero_ratio
+                }
     
     if not zero_ratios:
-        print("  No problematic columns found in 202006")
+        print(f"  No problematic columns found in months {months_to_fix}")
         return df
     
-    print(f"  Found {len(zero_ratios)} columns with >50% zeros in 202006")
-    print(f"  Top problematic: {list(zero_ratios.keys())[:5]}")
+    # Group by column to see which columns are problematic
+    problematic_cols = set([info['col'] for info in zero_ratios.values()])
+    print(f"  Found {len(problematic_cols)} columns with >80% zeros across problematic months")
+    print(f"  Sample columns: {list(problematic_cols)[:5]}")
     
-    # Extract data for imputation (include some context months)
-    context_months = [202005, 202006, 202007]
+    # Extract data for imputation (include context months around problematic ones)
+    # For 201905: include 201904, 201905, 201906
+    # For 201910: include 201909, 201910, 201911
+    # For 202006: include 202005, 202006, 202007
+    context_months = set()
+    for month in months_to_fix:
+        context_months.add(month - 1)  # Previous month
+        context_months.add(month)      # Current month
+        context_months.add(month + 1)  # Next month
+    
+    context_months = sorted([m for m in context_months if m in available_months])
+    print(f"  Using context months: {context_months}")
+    
     df_context = df.filter(pl.col("foto_mes").is_in(context_months))
     
     # Prepare data for sklearn (convert to numpy)
@@ -244,19 +276,25 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     
     # Get the data
     X = df_context.select(numeric_cols).to_numpy()
+    foto_mes_array = df_context.select("foto_mes").to_series().to_numpy()
     
-    # Mark zeros as missing ONLY for 202006 and problematic columns
+    # Mark zeros as missing for problematic columns in their respective months
     X_impute = X.copy()
-    mask_202006 = df_context.select("foto_mes").to_series() == 202006
     
-    for idx, col in enumerate(numeric_cols):
-        if col in zero_ratios:
-            # Replace zeros with NaN for this column in 202006
-            X_impute[mask_202006.to_numpy(), idx] = np.where(
-                X_impute[mask_202006.to_numpy(), idx] == 0,
-                np.nan,
-                X_impute[mask_202006.to_numpy(), idx]
-            )
+    for key, info in zero_ratios.items():
+        col = info['col']
+        month = info['month']
+        col_idx = numeric_cols.index(col)
+        
+        # Create mask for this specific month
+        mask_month = foto_mes_array == month
+        
+        # Replace zeros with NaN for this column in this month
+        X_impute[mask_month, col_idx] = np.where(
+            X_impute[mask_month, col_idx] == 0,
+            np.nan,
+            X_impute[mask_month, col_idx]
+        )
     
     # Count missing values
     n_missing = np.isnan(X_impute).sum()
