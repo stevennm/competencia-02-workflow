@@ -19,6 +19,10 @@ from .feature_engineering_utils import (
     calculate_trend_features_polars
 )
 
+from .rf_features_utils import (
+    add_rf_features
+)
+
 __all__ = [
     # Preprocessing functions
     'load_data',
@@ -31,6 +35,8 @@ __all__ = [
     'add_historical_features',
     'add_lag_features',
     'add_delta_features',
-    'calculate_trend_features_polars'
+    'calculate_trend_features_polars',
+    # RF features functions
+    'add_rf_features'
 ]
 

@@ -62,12 +62,14 @@ def main():
     print("  1. Generate clase_ternaria from raw data")
     print("  2. Preprocessing (eliminate features, MICE, IPC)")
     print("  3. Feature Engineering (lags, deltas, trends)")
+    print("  4. Random Forest Features (optional)")
     
     # Define pipeline steps
     steps = [
         "01_generate_clase_ternaria.py",
         "02_preprocessing.py",
-        "03_feature_engineering.py"
+        "03_feature_engineering.py",
+        "04_rf_features.py"  # New step
     ]
     
     # Execute each step
@@ -89,8 +91,9 @@ def main():
     print("\nOutput files created:")
     print("  - data/competencia_02_target.parquet (with clase_ternaria)")
     print("  - data/preprocessed_data.parquet (cleaned data)")
-    print("  - data/featured_data.parquet (with all features)")
-    print("\nNext step: Use featured_data.parquet for training")
+    print("  - data/featured_data.parquet (with lags/deltas/trends)")
+    print("  - data/final_dataset.parquet (with RF features)")
+    print("\nNext step: Use final_dataset.parquet for training")
     
     return 0
 
