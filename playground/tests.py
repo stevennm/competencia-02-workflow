@@ -1,224 +1,146 @@
-# Read parquet files efficiently without loading all data
+"""
+Explorador simple de columnas para datasets grandes
+Lee solo el schema sin cargar datos en memoria
+"""
 import polars as pl
-import os
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib_venn import venn2, venn3
 
-# Files to compare
-files = {
-    "final_dataset": "data/final_dataset.parquet",
-    "featured_data": "data/featured_data.parquet",
-    "dataset_pequeno": "data/dataset_pequeno_2022_03.parquet"
+# ============================================================================
+# CONFIGURACION
+# ============================================================================
+DATASET_PATH = "data/final_dataset.parquet"
+
+# Columnas originales del dataset (competencia_02_target.parquet)
+# NOTA: cprestamos_personales y mprestamos_personales aparecen en featured_data
+# pero NO en el dataset original. Se crean en algún punto del pipeline (posiblemente RF)
+ORIGINAL_COLUMNS = {
+    "numero_de_cliente", "foto_mes", "active_quarter", "cliente_vip", "internet",
+    "cliente_edad", "cliente_antiguedad", "mrentabilidad", "mrentabilidad_annual",
+    "mcomisiones", "mactivos_margen", "mpasivos_margen", "cproductos", "tcuentas",
+    "ccuenta_corriente", "mcuenta_corriente_adicional", "mcuenta_corriente",
+    "ccaja_ahorro", "mcaja_ahorro", "mcaja_ahorro_adicional", "mcaja_ahorro_dolares",
+    "cdescubierto_preacordado", "mcuentas_saldo", "ctarjeta_debito",
+    "ctarjeta_debito_transacciones", "mautoservicio", "ctarjeta_visa",
+    "ctarjeta_visa_transacciones", "mtarjeta_visa_consumo", "ctarjeta_master",
+    "ctarjeta_master_transacciones", "mtarjeta_master_consumo", "cprestamos_prendarios",
+    "mprestamos_prendarios", "cprestamos_hipotecarios", "mprestamos_hipotecarios",
+    "cplazo_fijo", "mplazo_fijo_dolares", "mplazo_fijo_pesos", "cinversion1",
+    "minversion1_pesos", "minversion1_dolares", "cinversion2", "minversion2",
+    "cseguro_vida", "cseguro_auto", "cseguro_vivienda", "cseguro_accidentes_personales",
+    "ccaja_seguridad", "cpayroll_trx", "mpayroll", "mpayroll2", "cpayroll2_trx",
+    "ccuenta_debitos_automaticos", "mcuenta_debitos_automaticos",
+    "ctarjeta_visa_debitos_automaticos", "mttarjeta_visa_debitos_automaticos",
+    "ctarjeta_master_debitos_automaticos", "mttarjeta_master_debitos_automaticos",
+    "cpagodeservicios", "mpagodeservicios", "cpagomiscuentas", "mpagomiscuentas",
+    "ccajeros_propios_descuentos", "mcajeros_propios_descuentos",
+    "ctarjeta_visa_descuentos", "mtarjeta_visa_descuentos", "ctarjeta_master_descuentos",
+    "mtarjeta_master_descuentos", "ccomisiones_mantenimiento", "mcomisiones_mantenimiento",
+    "ccomisiones_otras", "mcomisiones_otras", "cforex", "cforex_buy", "mforex_buy",
+    "cforex_sell", "mforex_sell", "ctransferencias_recibidas", "mtransferencias_recibidas",
+    "ctransferencias_emitidas", "mtransferencias_emitidas", "cextraccion_autoservicio",
+    "mextraccion_autoservicio", "ccheques_depositados", "mcheques_depositados",
+    "ccheques_emitidos", "mcheques_emitidos", "ccheques_depositados_rechazados",
+    "mcheques_depositados_rechazados", "ccheques_emitidos_rechazados",
+    "mcheques_emitidos_rechazados", "tcallcenter", "ccallcenter_transacciones",
+    "thomebanking", "chomebanking_transacciones", "ccajas_transacciones",
+    "ccajas_consultas", "ccajas_depositos", "ccajas_extracciones", "ccajas_otras",
+    "catm_trx", "matm", "catm_trx_other", "matm_other", "ctrx_quarter", "tmobile_app",
+    "cmobile_app_trx", "Master_delinquency", "Master_status", "Master_mfinanciacion_limite",
+    "Master_Fvencimiento", "Master_Finiciomora", "Master_msaldototal", "Master_msaldopesos",
+    "Master_msaldodolares", "Master_mconsumospesos", "Master_mconsumosdolares",
+    "Master_mlimitecompra", "Master_madelantopesos", "Master_madelantodolares",
+    "Master_fultimo_cierre", "Master_mpagado", "Master_mpagospesos", "Master_mpagosdolares",
+    "Master_fechaalta", "Master_mconsumototal", "Master_cconsumos",
+    "Master_cadelantosefectivo", "Master_mpagominimo", "Visa_delinquency", "Visa_status",
+    "Visa_mfinanciacion_limite", "Visa_Fvencimiento", "Visa_Finiciomora",
+    "Visa_msaldototal", "Visa_msaldopesos", "Visa_msaldodolares", "Visa_mconsumospesos",
+    "Visa_mconsumosdolares", "Visa_mlimitecompra", "Visa_madelantopesos",
+    "Visa_madelantodolares", "Visa_fultimo_cierre", "Visa_mpagado", "Visa_mpagospesos",
+    "Visa_mpagosdolares", "Visa_fechaalta", "Visa_mconsumototal", "Visa_cconsumos",
+    "Visa_cadelantosefectivo", "Visa_mpagominimo", "clase_ternaria",
+    # Las siguientes 2 aparecen en featured_data pero NO en competencia_02_target
+    # Posiblemente creadas por un código anterior o importadas de otro dataset
+    "cprestamos_personales", "mprestamos_personales"
 }
 
-# Read schemas
-schemas = {}
-for name, path in files.items():
-    if os.path.exists(path):
-        print("="*70)
-        print(f"{name.upper()} - {path}")
-        print("="*70)
-        schema = pl.read_parquet_schema(path)
-        schemas[name] = schema
-        print(f"Total columns: {len(schema)}")
-        print(f"Column names: {list(schema.keys())[:10]}... (showing first 10)")
-    else:
-        print(f"⚠ File not found: {path}")
-        print()
+# ============================================================================
 
-# Compare columns between files
-print("\n" + "="*70)
-print("COLUMN COMPARISON")
+def categorize_columns(columns):
+    """Categoriza las columnas por tipo de feature"""
+    categories = {
+        'Metadata': [],
+        'Original': [],
+        'Lag': [],
+        'Delta': [],
+        'Trend': [],
+        'Ratio': [],
+        'MaxMin': [],
+        'Engineered': []
+    }
+    
+    for col in columns:
+        col_lower = col.lower()
+        
+        # Metadata
+        if col in ['numero_de_cliente', 'foto_mes', 'clase_ternaria']:
+            categories['Metadata'].append(col)
+        # Columnas originales del dataset base
+        elif col in ORIGINAL_COLUMNS:
+            categories['Original'].append(col)
+        # Lag features
+        elif '_lag' in col_lower or col_lower.startswith('lag'):
+            categories['Lag'].append(col)
+        # Delta features
+        elif '_delta' in col_lower or col_lower.startswith('delta'):
+            categories['Delta'].append(col)
+        # Trend features
+        elif '_trend' in col_lower or col_lower.startswith('trend'):
+            categories['Trend'].append(col)
+        # Ratio features
+        elif '_ratio' in col_lower or col_lower.startswith('ratio'):
+            categories['Ratio'].append(col)
+        # MaxMin features
+        elif 'maxmin' in col_lower or '_max' in col_lower or '_min' in col_lower:
+            categories['MaxMin'].append(col)
+        # Otras features engineered
+        else:
+            categories['Engineered'].append(col)
+    
+    return categories
+
+# Leer solo el schema (sin cargar datos)
+print("="*70)
+print(f"EXPLORANDO: {DATASET_PATH}")
 print("="*70)
 
-if len(schemas) >= 2:
-    # Get column sets
-    col_sets = {name: set(schema.keys()) for name, schema in schemas.items()}
-    
-    # Print summary
-    print("\nColumn counts:")
-    for name, cols in col_sets.items():
-        print(f"  {name}: {len(cols)} columns")
-    
-    # Compare all pairs
-    names = list(col_sets.keys())
-    for i in range(len(names)):
-        for j in range(i+1, len(names)):
-            name1, name2 = names[i], names[j]
-            cols1, cols2 = col_sets[name1], col_sets[name2]
-            
-            print(f"\n{'='*70}")
-            print(f"Comparing: {name1} vs {name2}")
-            print(f"{'='*70}")
-            
-            # Columns only in first file
-            only_1 = cols1 - cols2
-            if only_1:
-                print(f"\n✓ Columns ONLY in {name1} ({len(only_1)}):")
-                for col in sorted(only_1)[:20]:  # Show first 20
-                    print(f"  - {col}")
-                if len(only_1) > 20:
-                    print(f"  ... and {len(only_1) - 20} more")
-            
-            # Columns only in second file
-            only_2 = cols2 - cols1
-            if only_2:
-                print(f"\n✓ Columns ONLY in {name2} ({len(only_2)}):")
-                for col in sorted(only_2)[:20]:  # Show first 20
-                    print(f"  - {col}")
-                if len(only_2) > 20:
-                    print(f"  ... and {len(only_2) - 20} more")
-            
-            # Common columns
-            common = cols1 & cols2
-            print(f"\n✓ Common columns: {len(common)}")
-else:
-    print("Need at least 2 files to compare")
+schema = pl.read_parquet_schema(DATASET_PATH)
+columns = list(schema.keys())
 
-# Create visualizations
+print(f"\nTotal columnas: {len(columns)}")
+print(f"Tipos de datos: {set(schema.values())}")
+
+# Categorizar columnas
+categories = categorize_columns(columns)
+
+# Mostrar resumen
 print("\n" + "="*70)
-print("CREATING VISUALIZATIONS")
+print("CATEGORIAS DE FEATURES")
 print("="*70)
 
-if len(schemas) >= 2:
-    names = list(col_sets.keys())
-    
-    # 1. Bar chart showing column counts
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    
-    # Chart 1: Total columns per file
-    ax1 = axes[0, 0]
-    counts = [len(cols) for cols in col_sets.values()]
-    bars = ax1.bar(names, counts, color=['#3498db', '#e74c3c', '#2ecc71'][:len(names)])
-    ax1.set_ylabel('Number of Columns')
-    ax1.set_title('Total Columns per Dataset', fontsize=14, fontweight='bold')
-    ax1.grid(axis='y', alpha=0.3)
-    
-    # Add value labels on bars
-    for bar in bars:
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}',
-                ha='center', va='bottom', fontweight='bold')
-    
-    # Chart 2: Venn diagram (if 2 files)
-    if len(names) == 2:
-        ax2 = axes[0, 1]
-        name1, name2 = names[0], names[1]
-        cols1, cols2 = col_sets[name1], col_sets[name2]
-        
-        venn2([cols1, cols2], set_labels=(name1, name2), ax=ax2)
-        ax2.set_title(f'Column Overlap: {name1} vs {name2}', 
-                     fontsize=14, fontweight='bold')
-    
-    # Chart 3: Stacked bar showing unique vs common columns
-    ax3 = axes[1, 0]
-    
-    # Calculate unique and common for each pair
-    if len(names) == 2:
-        name1, name2 = names[0], names[1]
-        cols1, cols2 = col_sets[name1], col_sets[name2]
-        
-        only_1 = len(cols1 - cols2)
-        only_2 = len(cols2 - cols1)
-        common = len(cols1 & cols2)
-        
-        categories = [name1, name2]
-        unique_counts = [only_1, only_2]
-        common_counts = [common, common]
-        
-        x = range(len(categories))
-        width = 0.6
-        
-        p1 = ax3.bar(x, unique_counts, width, label='Unique columns', color='#e74c3c')
-        p2 = ax3.bar(x, common_counts, width, bottom=unique_counts, 
-                    label='Common columns', color='#2ecc71')
-        
-        ax3.set_ylabel('Number of Columns')
-        ax3.set_title('Column Distribution: Unique vs Common', 
-                     fontsize=14, fontweight='bold')
-        ax3.set_xticks(x)
-        ax3.set_xticklabels(categories)
-        ax3.legend()
-        ax3.grid(axis='y', alpha=0.3)
-        
-        # Add value labels
-        for i, (u, c) in enumerate(zip(unique_counts, common_counts)):
-            ax3.text(i, u/2, str(u), ha='center', va='center', 
-                    fontweight='bold', color='white')
-            ax3.text(i, u + c/2, str(c), ha='center', va='center', 
-                    fontweight='bold', color='white')
-    
-    # Chart 4: Feature categories breakdown
-    ax4 = axes[1, 1]
-    
-    # Categorize columns by prefix/pattern
-    def categorize_columns(cols):
-        categories = {
-            'Original': 0,
-            'Lag features': 0,
-            'Delta features': 0,
-            'Trend features': 0,
-            'RF features': 0,
-            'Other': 0
-        }
-        
-        for col in cols:
-            col_lower = col.lower()
-            if col_lower.startswith('rf_'):
-                categories['RF features'] += 1
-            elif '_lag' in col_lower or col_lower.startswith('lag'):
-                categories['Lag features'] += 1
-            elif '_delta' in col_lower or col_lower.startswith('delta'):
-                categories['Delta features'] += 1
-            elif '_trend' in col_lower or col_lower.startswith('trend'):
-                categories['Trend features'] += 1
-            elif col in ['numero_de_cliente', 'foto_mes', 'clase_ternaria']:
-                continue  # Skip metadata
-            else:
-                categories['Original'] += 1
-        
-        return categories
-    
-    # Get categories for final_dataset (or first available)
-    target_file = 'final_dataset' if 'final_dataset' in col_sets else names[0]
-    categories = categorize_columns(col_sets[target_file])
-    
-    # Remove zero categories
-    categories = {k: v for k, v in categories.items() if v > 0}
-    
-    colors_cat = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#95a5a6']
-    wedges, texts, autotexts = ax4.pie(categories.values(), 
-                                        labels=categories.keys(),
-                                        autopct='%1.1f%%',
-                                        colors=colors_cat[:len(categories)],
-                                        startangle=90)
-    
-    ax4.set_title(f'Feature Categories in {target_file}', 
-                 fontsize=14, fontweight='bold')
-    
-    # Make percentage text bold
-    for autotext in autotexts:
-        autotext.set_color('white')
-        autotext.set_fontweight('bold')
-    
-    plt.tight_layout()
-    
-    # Save figure
-    output_path = 'playground/column_comparison.png'
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"\n✓ Visualization saved to: {output_path}")
-    
-    plt.show()
-    
-    # Print feature category breakdown
-    print("\n" + "="*70)
-    print(f"FEATURE CATEGORIES IN {target_file.upper()}")
-    print("="*70)
-    for cat, count in categories.items():
-        print(f"  {cat:20s}: {count:4d} features")
-    print(f"  {'TOTAL':20s}: {sum(categories.values()):4d} features")
-    
-else:
-    print("Need at least 2 files to create visualizations")
+for cat_name, cols in categories.items():
+    if cols:  # Solo mostrar categorias no vacias
+        print(f"\n{cat_name.upper()} ({len(cols)} features):")
+        # Mostrar primeras 10
+        for col in sorted(cols)[:10]:
+            dtype = schema[col]
+            print(f"  - {col:40s} [{dtype}]")
+        if len(cols) > 10:
+            print(f"  ... y {len(cols) - 10} más")
+
+# Resumen final
+print("\n" + "="*70)
+print("RESUMEN")
+print("="*70)
+for cat_name, cols in categories.items():
+    if cols:
+        print(f"  {cat_name:15s}: {len(cols):4d} features")
+print(f"  {'TOTAL':15s}: {len(columns):4d} features")
