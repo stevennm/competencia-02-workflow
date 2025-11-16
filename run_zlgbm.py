@@ -178,7 +178,7 @@ def main():
         print_section("STEP 1: LOAD PREPROCESSED DATA")
         
         # Assuming you already have preprocessed data with feature engineering
-        data_file = "data/final_dataset.parquet"
+        data_file = "data/featured_data_liteversion.parquet"
         
         if not Path(data_file).exists():
             raise FileNotFoundError(

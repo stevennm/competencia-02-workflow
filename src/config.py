@@ -6,13 +6,13 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "model_until_202104_p202106_linearweight",
+    "experimento": "experimento_colab_linear",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
     "bucket": {
-        "enabled": False,  # Set to True to enable bucket copying in VM
-        "base_path": "~/buckets/b1",  # Base bucket path (change as needed)
+        "enabled": True,  # Set to True to enable bucket copying in VM
+        "base_path": "~/buckets/b1/exp",  # Base bucket path (change as needed)
         "copy_on_create": True,  # Copy files immediately after creation
     },
     
