@@ -143,9 +143,13 @@ def main():
         if not Path(data_file).exists():
             raise FileNotFoundError(
                 f"Data file not found: {data_file}\n"
-                f"Run the preprocessing and feature engineering steps first:\n"
-                f"  1. python run_preprocessing.py\n"
-                f"  2. python run_feature_engineering.py"
+                f"Run the preprocessing pipeline first:\n"
+                f"  python preprocessing/run_all.py\n"
+                f"\nOr run individual steps:\n"
+                f"  1. python preprocessing/01_generate_clase_ternaria.py\n"
+                f"  2. python preprocessing/02_preprocessing.py\n"
+                f"  3. python preprocessing/03_feature_engineering.py\n"
+                f"  4. python preprocessing/04_rf_features.py"
             )
         
         df = pl.read_parquet(data_file)
