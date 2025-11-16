@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "experimento_colab_exponential_202106_feat_imp",
+    "experimento": "comp2_entrega1_202108",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
@@ -30,14 +30,14 @@ PARAM = {
             201907, 201908, 201909, 201910, 201911, 201912,
             202001, 202002, 202003, 202004, 202005, 202006,
             202007, 202008, 202009, 202010, 202011, 202012,
-            202101, 202102 , 202103, 202104
+            202101, 202102, 202103, 202104, 202105, 202106
             ], # From notebook
-            "future": [202106],
+            "future": [202108],
             "undersampling": 0.10,  # Conservative (50%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
             
             # Month weighting strategy
-            "month_weights": "exponential",  # Options: "equal", "step", "linear", "exponential"
+            "month_weights": "equal",  # Options: "equal", "step", "linear", "exponential"
         },
         
         # zLightGBM parameters
