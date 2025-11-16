@@ -35,6 +35,9 @@ PARAM = {
             "future": [202106],
             "undersampling": 0.10,  # Conservative (50%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
+            
+            # Month weighting strategy
+            "month_weights": "equal",  # Options: "equal", "step", "linear", "exponential"
         },
         
         # zLightGBM parameters

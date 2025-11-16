@@ -12,6 +12,100 @@ from typing import Dict, List
 from pathlib import Path
 
 
+def calculate_month_weights(months: np.ndarray, strategy: str = "equal") -> np.ndarray:
+    """
+    Calculate weights for each sample based on its month
+    
+    Args:
+        months: Array of foto_mes values for each sample (format YYYYMM)
+        strategy: Weighting strategy
+            - "equal": All months have weight 1.0
+            - "step": Step decay (last 6 months = 1.0, next 6 = 0.7, rest = 0.4)
+            - "linear": Linear decay from newest to oldest (1.0 to 0.3)
+            - "exponential": Exponential decay (more weight to recent months)
+    
+    Returns:
+        Array of weights for each sample
+    """
+    if strategy == "equal":
+        return np.ones(len(months))
+    
+    # Get unique months and sort them
+    unique_months = np.unique(months)
+    unique_months.sort()
+    
+    # Calculate real month differences from the most recent month
+    most_recent = unique_months[-1]
+    
+    # Create weight map for each month
+    n_months = len(unique_months)
+    month_weight_map = {}
+    
+    if strategy == "step":
+        # Step decay: last 6 months = 1.0, next 6 = 0.7, rest = 0.4
+        for month in unique_months:
+            # Calculate how many months back this is from the most recent
+            months_back = calculate_month_difference(most_recent, month)
+            
+            if months_back < 6:
+                month_weight_map[month] = 1.0
+            elif months_back < 12:
+                month_weight_map[month] = 0.7
+            else:
+                month_weight_map[month] = 0.4
+    
+    elif strategy == "linear":
+        # Linear decay: newest = 1.0, oldest = 0.3
+        oldest = unique_months[0]
+        total_months = calculate_month_difference(most_recent, oldest)
+        
+        for month in unique_months:
+            months_back = calculate_month_difference(most_recent, month)
+            # Linear interpolation: months_back=0 -> weight=1.0, months_back=total -> weight=0.3
+            weight = 1.0 - (0.7 * months_back / total_months)
+            month_weight_map[month] = weight
+    
+    elif strategy == "exponential":
+        # Exponential decay: much more weight to recent months
+        # Using decay factor of 0.95 per month back
+        for month in unique_months:
+            months_back = calculate_month_difference(most_recent, month)
+            weight = 0.95 ** months_back
+            month_weight_map[month] = weight
+    
+    else:
+        raise ValueError(f"Unknown weighting strategy: {strategy}")
+    
+    # Map weights to each sample
+    weights = np.array([month_weight_map[m] for m in months])
+    
+    return weights
+
+
+def calculate_month_difference(month1: int, month2: int) -> int:
+    """
+    Calculate difference in months between two YYYYMM dates
+    
+    Args:
+        month1: More recent month (YYYYMM)
+        month2: Older month (YYYYMM)
+    
+    Returns:
+        Number of months difference
+    
+    Example:
+        calculate_month_difference(202106, 202101) -> 5
+        calculate_month_difference(202101, 202012) -> 1
+        calculate_month_difference(202101, 201912) -> 1
+    """
+    year1 = month1 // 100
+    mon1 = month1 % 100
+    year2 = month2 // 100
+    mon2 = month2 % 100
+    
+    return (year1 - year2) * 12 + (mon1 - mon2)
+
+
 def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) -> None:
     """
     Train final model using zLightGBM (no Bayesian Optimization needed)
@@ -91,6 +185,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     
     X_train = df_train.select(campos_buenos_valid).to_numpy()
     y_train = df_train.select("clase01").to_numpy().ravel()
+    months_train = df_train.select("foto_mes").to_numpy().ravel()
     
     print(f"\nTraining data:")
     print(f"  Samples: {X_train.shape[0]:,}")
@@ -98,9 +193,57 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     print(f"  Positives: {y_train.sum():,} ({y_train.sum()/len(y_train)*100:.2f}%)")
     print(f"  Negatives: {len(y_train) - y_train.sum():,}")
     
-    # Create LightGBM dataset
-    dtrain = lgb.Dataset(X_train, label=y_train, free_raw_data=False,
-                        feature_name=campos_buenos_valid)
+    # Calculate month weights
+    month_weight_strategy = zlgbm_config["train_final"].get("month_weights", "equal")
+    sample_weights = calculate_month_weights(months_train, month_weight_strategy)
+    
+    print(f"\nMonth weighting strategy: {month_weight_strategy}")
+    if month_weight_strategy != "equal":
+        unique_months = np.unique(months_train)
+        unique_months.sort()
+        print(f"  Month weights:")
+        for month in unique_months[:3]:  # First 3 months
+            weight = sample_weights[months_train == month][0]
+            print(f"    {month}: {weight:.3f}")
+        print(f"    ...")
+        for month in unique_months[-3:]:  # Last 3 months
+            weight = sample_weights[months_train == month][0]
+            print(f"    {month}: {weight:.3f}")
+    
+    # Save month weights to file
+    experimento = config["experimento"]
+    output_dir = Path(f"output/{experimento}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    weights_file = output_dir / "month_weights.txt"
+    with open(weights_file, 'w') as f:
+        f.write(f"Month Weighting Strategy: {month_weight_strategy}\n")
+        f.write(f"Experiment: {experimento}\n")
+        f.write("="*50 + "\n\n")
+        
+        unique_months_sorted = np.unique(months_train)
+        unique_months_sorted.sort()
+        
+        f.write(f"{'Month':<10} {'Weight':<10} {'Samples':<10}\n")
+        f.write("-"*30 + "\n")
+        
+        for month in unique_months_sorted:
+            weight = sample_weights[months_train == month][0]
+            n_samples = (months_train == month).sum()
+            f.write(f"{month:<10} {weight:<10.4f} {n_samples:<10}\n")
+        
+        f.write("\n" + "="*50 + "\n")
+        f.write("Statistics:\n")
+        f.write(f"  Total samples: {len(sample_weights)}\n")
+        f.write(f"  Unique months: {len(unique_months_sorted)}\n")
+        f.write(f"  Weight range: [{sample_weights.min():.4f}, {sample_weights.max():.4f}]\n")
+        f.write(f"  Mean weight: {sample_weights.mean():.4f}\n")
+    
+    print(f"✓ Month weights saved to {weights_file}")
+    
+    # Create LightGBM dataset with weights
+    dtrain = lgb.Dataset(X_train, label=y_train, weight=sample_weights,
+                        free_raw_data=False, feature_name=campos_buenos_valid)
     
     # Get zLightGBM parameters
     lgb_params = zlgbm_config["param"].copy()

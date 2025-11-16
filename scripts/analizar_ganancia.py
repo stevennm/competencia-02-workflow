@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 # CONFIGURACION - CAMBIA ESTO
 # ============================================================================
 
-EXPERIMENTO = "model_until_202012_zlgbm"                       # Nombre del experimento
+EXPERIMENTO = "model_until_202104_p202106_zlgbm"                       # Nombre del experimento
 TARGET_FILE = "data/competencia_02_target.parquet"             # Archivo con labels reales
-MES_COMPARAR = 202102                                          # Mes contra el que comparar
+MES_COMPARAR = 202106                                          # Mes contra el que comparar
 GAIN_BAJA2 = 780000                                            # Ganancia por BAJA+2
 COST_ENVIO = 20000                                             # Costo por envío
 MAX_ENVIOS = 30000                                             # Rango maximo para buscar optimo
