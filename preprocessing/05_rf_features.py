@@ -1,6 +1,6 @@
 """
-Step 4: Random Forest Features (Optional)
-Loads featured_data.parquet and adds RF leaf features
+Step 5: Random Forest Features (Optional)
+Loads advanced_featured_data.parquet and adds RF leaf features
 Configuration from workflow-jueves notebook
 """
 
@@ -76,7 +76,7 @@ def main():
     
     try:
         # Input and output paths
-        input_file = "data/featured_data.parquet"
+        input_file = "data/advanced_featured_data.parquet"  # Changed from featured_data.parquet
         output_file = "data/final_dataset.parquet"
         
         print(f"\nInput:  {input_file}")
@@ -94,7 +94,7 @@ def main():
         print(f"  Min data in leaf: {rf_config['lgb_param']['min_data_in_leaf']}")
         
         # Load featured data
-        print_section("LOADING FEATURED DATA")
+        print_section("LOADING ADVANCED FEATURED DATA")
         print(f"Loading from {input_file}...")
         df = pl.read_parquet(input_file)
         print(f"Loaded: {df.shape[0]:,} rows, {df.shape[1]} columns")
@@ -150,4 +150,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
 

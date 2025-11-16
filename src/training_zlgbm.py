@@ -403,9 +403,19 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         print(f"\nCanary analysis:")
         print(f"  Canary features: {len(canary_df)}")
         print(f"  Real features: {len(real_df)}")
-        print(f"  Avg canary importance: {canary_df['importance'].mean():,.1f}")
-        print(f"  Avg real feature importance: {real_df['importance'].mean():,.1f}")
-        print(f"  Ratio (real/canary): {real_df['importance'].mean() / canary_df['importance'].mean():.2f}x")
+        
+        canary_mean = canary_df['importance'].mean()
+        real_mean = real_df['importance'].mean()
+        
+        print(f"  Avg canary importance: {canary_mean:,.1f}")
+        print(f"  Avg real feature importance: {real_mean:,.1f}")
+        
+        # Calculate ratio (handle division by zero)
+        if canary_mean > 0:
+            ratio = real_mean / canary_mean
+            print(f"  Ratio (real/canary): {ratio:.2f}x")
+        else:
+            print(f"  Ratio (real/canary): ∞ (canaries have zero importance)")
         
         # Check how many canaries are in top features
         top_100_canaries = importance_df.head(100).filter(pl.col('is_canary')).shape[0]
@@ -414,7 +424,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         print(f"  Canaries in top 100: {top_100_canaries}")
         print(f"  Canaries in top 200: {top_200_canaries}")
         
-        if real_df['importance'].mean() > canary_df['importance'].mean():
+        if real_mean > canary_mean:
             print(f"  ✓ Real features are more important than canaries (good!)")
         else:
             print(f"  ⚠ Canaries have similar importance to real features (check for overfitting)")
