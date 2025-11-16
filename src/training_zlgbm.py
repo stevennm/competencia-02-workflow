@@ -170,26 +170,68 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         importance = modelo.feature_importance(importance_type='gain')
         feature_names = campos_buenos_valid
         
+        # Create feature importance DataFrame using Polars
+        importance_df = pl.DataFrame({
+            'feature': feature_names,
+            'importance': importance,
+            'is_canary': [name.startswith("canarito_") for name in feature_names]
+        })
+        
+        # Sort by importance
+        importance_df = importance_df.sort('importance', descending=True)
+        
+        # Add rank
+        importance_df = importance_df.with_columns([
+            pl.lit(list(range(1, len(importance_df) + 1))).alias('rank')
+        ])
+        
+        # Add relative importance (percentage)
+        total_importance = importance_df['importance'].sum()
+        importance_df = importance_df.with_columns([
+            (pl.col('importance') / total_importance * 100).alias('importance_pct'),
+        ])
+        
+        # Add cumulative sum
+        importance_df = importance_df.with_columns([
+            pl.col('importance_pct').cum_sum().alias('importance_cumsum_pct')
+        ])
+        
+        # Save to file
+        importance_file = output_dir / "feature_importance.txt"
+        importance_df.write_csv(importance_file, separator="\t")
+        print(f"✓ Feature importance saved to {importance_file}")
+        
         # Get top features
-        top_indices = np.argsort(importance)[::-1][:20]
+        top_features = importance_df.head(20)
         
         print(f"\nTop 20 features by importance:")
-        for i, idx in enumerate(top_indices, 1):
-            feat_name = feature_names[idx]
-            is_canary = feat_name.startswith("canarito_")
-            marker = "🐤" if is_canary else "  "
-            print(f"  {i:2d}. {marker} {feat_name:40s} {importance[idx]:>12,.1f}")
+        print(f"  {'Rank':<5} {'Feature':<40} {'Importance':>12} {'%':>8} {'Cumsum %':>10}")
+        print(f"  {'-'*80}")
+        for row in top_features.iter_rows(named=True):
+            marker = "🐤" if row['is_canary'] else "  "
+            print(f"  {row['rank']:>3d}. {marker} {row['feature']:<38s} "
+                  f"{row['importance']:>12,.1f} {row['importance_pct']:>7.2f}% "
+                  f"{row['importance_cumsum_pct']:>9.2f}%")
         
         # Analyze canary importance
-        canary_importance = importance[:n_canaritos]
-        real_importance = importance[n_canaritos:]
+        canary_df = importance_df.filter(pl.col('is_canary'))
+        real_df = importance_df.filter(~pl.col('is_canary'))
         
         print(f"\nCanary analysis:")
-        print(f"  Avg canary importance: {canary_importance.mean():,.1f}")
-        print(f"  Avg real feature importance: {real_importance.mean():,.1f}")
-        print(f"  Ratio (real/canary): {real_importance.mean() / canary_importance.mean():.2f}x")
+        print(f"  Canary features: {len(canary_df)}")
+        print(f"  Real features: {len(real_df)}")
+        print(f"  Avg canary importance: {canary_df['importance'].mean():,.1f}")
+        print(f"  Avg real feature importance: {real_df['importance'].mean():,.1f}")
+        print(f"  Ratio (real/canary): {real_df['importance'].mean() / canary_df['importance'].mean():.2f}x")
         
-        if real_importance.mean() > canary_importance.mean():
+        # Check how many canaries are in top features
+        top_100_canaries = importance_df.head(100).filter(pl.col('is_canary')).shape[0]
+        top_200_canaries = importance_df.head(200).filter(pl.col('is_canary')).shape[0]
+        
+        print(f"  Canaries in top 100: {top_100_canaries}")
+        print(f"  Canaries in top 200: {top_200_canaries}")
+        
+        if real_df['importance'].mean() > canary_df['importance'].mean():
             print(f"  ✓ Real features are more important than canaries (good!)")
         else:
             print(f"  ⚠ Canaries have similar importance to real features (check for overfitting)")
