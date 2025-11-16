@@ -309,9 +309,25 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         print(f"⚠ Could not save tree structure: {e}")
     
     # Feature importance
+    print(f"\n{'='*70}")
+    print("FEATURE IMPORTANCE ANALYSIS")
+    print(f"{'='*70}")
+    
     try:
+        # Get feature importance from model
         importance = modelo.feature_importance(importance_type='gain')
         feature_names = campos_buenos_valid
+        
+        print(f"\n  Extracted importance for {len(importance)} features")
+        print(f"  Total importance (gain): {importance.sum():,.1f}")
+        print(f"  Non-zero features: {(importance > 0).sum()}")
+        
+        # Validate we have data
+        if len(importance) == 0 or len(feature_names) == 0:
+            raise ValueError("No feature importance data extracted from model")
+        
+        if len(importance) != len(feature_names):
+            raise ValueError(f"Mismatch: {len(importance)} importance values vs {len(feature_names)} feature names")
         
         # Create feature importance DataFrame using Polars
         importance_df = pl.DataFrame({
@@ -319,6 +335,8 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             'importance': importance,
             'is_canary': [name.startswith("canarito_") for name in feature_names]
         })
+        
+        print(f"  Created DataFrame with {len(importance_df)} rows")
         
         # Sort by importance
         importance_df = importance_df.sort('importance', descending=True)
@@ -339,10 +357,14 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             pl.col('importance_pct').cum_sum().alias('importance_cumsum_pct')
         ])
         
+        # Validate DataFrame before saving
+        if len(importance_df) == 0:
+            raise ValueError("Feature importance DataFrame is empty after processing")
+        
         # Save to file
         importance_file = output_dir / "feature_importance.txt"
         importance_df.write_csv(importance_file, separator="\t")
-        print(f"✓ Feature importance saved to {importance_file}")
+        print(f"\n✓ Feature importance saved to {importance_file} ({len(importance_df)} features)")
         
         # Get top features
         top_features = importance_df.head(20)
@@ -380,7 +402,49 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             print(f"  ⚠ Canaries have similar importance to real features (check for overfitting)")
         
     except Exception as e:
-        print(f"⚠ Could not analyze feature importance: {e}")
+        error_msg = f"CRITICAL ERROR in feature importance analysis: {e}"
+        print(f"\n❌ {error_msg}")
+        import traceback
+        traceback.print_exc()
+        raise RuntimeError(error_msg) from e
+    
+    # Final validation: ensure all critical files were created
+    print(f"\n{'='*70}")
+    print("VALIDATION: Checking output files")
+    print(f"{'='*70}")
+    
+    critical_files = {
+        "Model": model_file,
+        "Feature Importance": importance_file,
+        "Month Weights": weights_file
+    }
+    
+    missing_files = []
+    for name, filepath in critical_files.items():
+        if not filepath.exists():
+            missing_files.append(f"{name} ({filepath})")
+            print(f"  ❌ {name}: MISSING")
+        elif filepath.stat().st_size == 0:
+            missing_files.append(f"{name} ({filepath}) - EMPTY")
+            print(f"  ❌ {name}: EMPTY FILE")
+        else:
+            size_mb = filepath.stat().st_size / (1024 * 1024)
+            print(f"  ✓ {name}: {size_mb:.2f} MB")
+    
+    # Check feature importance has actual data (more than just header)
+    importance_lines = importance_file.read_text().strip().split('\n')
+    if len(importance_lines) <= 1:
+        missing_files.append(f"Feature Importance ({importance_file}) - NO DATA (only header)")
+        print(f"  ❌ Feature Importance: NO DATA (only header found)")
+    else:
+        print(f"  ✓ Feature Importance: {len(importance_lines)-1} features")
+    
+    if missing_files:
+        error_msg = f"Training validation FAILED. Missing or invalid files:\n" + "\n".join(f"  - {f}" for f in missing_files)
+        print(f"\n❌ {error_msg}")
+        raise RuntimeError(error_msg)
+    
+    print(f"\n✓ All output files validated successfully")
     
     print(f"\n{'='*70}")
     print("zLightGBM TRAINING COMPLETED SUCCESSFULLY")
