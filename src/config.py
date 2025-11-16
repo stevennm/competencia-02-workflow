@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "experimento_colab_exponential_202106",
+    "experimento": "experimento_colab_exponential_202106_feat_imp",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
