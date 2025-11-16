@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "model_until_202104_p202106",
+    "experimento": "model_until_202104_p202106_linearweight",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
