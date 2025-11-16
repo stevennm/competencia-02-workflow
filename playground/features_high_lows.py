@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 # load data
-df = pl.read_parquet("data/competencia_02_target.parquet")
+df = pl.read_parquet("data/preprocessed_dataset.parquet")
 
 print(f"\nDataset shape: {df.shape}")
 print(f"Total columns: {len(df.columns)}")

@@ -53,6 +53,52 @@ def eliminate_features(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def eliminate_problematic_months(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Eliminate months with data quality issues
+    
+    These months had severe data quality problems (>80% zeros in many columns)
+    that MICE was unable to fix properly. Instead of imputing, we remove them:
+    - 201905
+    - 201910
+    - 202006
+    
+    Args:
+        df: Input DataFrame
+        
+    Returns:
+        DataFrame with problematic months removed
+    """
+    problematic_months = [201905, 201910, 202006]
+    
+    # Check which months exist
+    available_months = df.select("foto_mes").unique().to_series().to_list()
+    months_to_remove = [m for m in problematic_months if m in available_months]
+    
+    if not months_to_remove:
+        print("\nNo problematic months found to remove")
+        return df
+    
+    initial_rows = df.shape[0]
+    
+    print(f"\nRemoving {len(months_to_remove)} problematic months:")
+    for month in months_to_remove:
+        month_rows = df.filter(pl.col("foto_mes") == month).shape[0]
+        print(f"  - {month}: {month_rows:,} rows")
+    
+    # Filter out problematic months
+    df = df.filter(~pl.col("foto_mes").is_in(problematic_months))
+    
+    final_rows = df.shape[0]
+    removed_rows = initial_rows - final_rows
+    
+    print(f"\nRows before: {initial_rows:,}")
+    print(f"Rows after:  {final_rows:,}")
+    print(f"Removed:     {removed_rows:,} rows ({100*removed_rows/initial_rows:.2f}%)")
+    
+    return df
+
+
 def main():
     """Main preprocessing execution"""
     start_time = time.time()
@@ -76,12 +122,18 @@ def main():
         print_section("STEP 2: ELIMINATE FEATURES (Data Drifting)")
         df = eliminate_features(df)
         
-        # Data quality fixes (MICE imputation)
-        print_section("STEP 3: DATA QUALITY FIXES (MICE)")
-        df = data_quality_fixes(df)
+        # Eliminate problematic months
+        print_section("STEP 3: ELIMINATE PROBLEMATIC MONTHS")
+        df = eliminate_problematic_months(df)
+        
+        # Data quality fixes (MICE imputation) - DISABLED
+        print_section("STEP 4: DATA QUALITY FIXES (MICE) - SKIPPED")
+        print("[INFO] MICE imputation is DISABLED")
+        print("       Problematic months (201905, 201910, 202006) have been removed instead")
+        # df = data_quality_fixes(df)  # COMMENTED OUT
         
         # Data drifting correction (IPC adjustment)
-        print_section("STEP 4: DATA DRIFTING CORRECTION (IPC)")
+        print_section("STEP 5: DATA DRIFTING CORRECTION (IPC)")
         df = data_drifting_correction(df)
         
         # Save results
@@ -91,7 +143,7 @@ def main():
         
         df.write_parquet(output_file)
         
-        print(f"✓ Saved successfully!")
+        print(f"[OK] Saved successfully!")
         
         # Completion
         elapsed_time = time.time() - start_time

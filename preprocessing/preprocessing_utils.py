@@ -387,7 +387,7 @@ def data_quality_fixes(df: pl.DataFrame) -> pl.DataFrame:
     # Sort to restore original order
     df_fixed = df_fixed.sort(["foto_mes", "numero_de_cliente"])
     
-    print(f"  ✓ Fixed {len(zero_ratios)} columns in 202006")
+    print(f"  [OK] Fixed {len(zero_ratios)} columns in 202006")
     
     return df_fixed
 
@@ -528,7 +528,7 @@ def data_drifting_correction(df: pl.DataFrame) -> pl.DataFrame:
     # Drop the temporary multiplier column
     df = df.drop("ipc_multiplier")
     
-    print(f"  ✓ Adjusted {len(monetary_cols)} columns for inflation")
+    print(f"  [OK] Adjusted {len(monetary_cols)} columns for inflation")
     print(f"  All values normalized to {base_month} purchasing power")
     
     return df
