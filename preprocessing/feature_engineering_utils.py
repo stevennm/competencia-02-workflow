@@ -149,21 +149,21 @@ def calculate_trend_features_polars(df: pl.DataFrame, cols: List[str],
         
         if promedio or ratioavg:
             new_cols.append(
-                pl.col(col).rolling_mean(window_size=ventana, min_periods=2)
+                pl.col(col).rolling_mean(window_size=ventana, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_avg{ventana}")
             )
         
         if minimo:
             new_cols.append(
-                pl.col(col).rolling_min(window_size=ventana, min_periods=2)
+                pl.col(col).rolling_min(window_size=ventana, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_min{ventana}")
             )
         
         if maximo or ratiomax:
             new_cols.append(
-                pl.col(col).rolling_max(window_size=ventana, min_periods=2)
+                pl.col(col).rolling_max(window_size=ventana, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_max{ventana}")
             )

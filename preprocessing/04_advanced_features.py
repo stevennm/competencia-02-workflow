@@ -57,37 +57,48 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     # 1. VOLATILITY FEATURES (Standard deviation and coefficient of variation)
     # =========================================================================
     print("\n1. Adding volatility features (std, CV, range)...")
-    volatility_exprs = []
+    
+    # Step 1a: Create std and range features first
+    volatility_exprs_step1 = []
     
     for col in key_cols:
-        avg_col = f"{col}_avg6"
         max_col = f"{col}_max6"
         min_col = f"{col}_min6"
         
         # Standard deviation over 6 months
         if col in df.columns:
-            volatility_exprs.append(
+            volatility_exprs_step1.append(
                 pl.col(col).rolling_std(window_size=6, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_std6")
             )
         
-        # Coefficient of variation (CV = std / mean)
-        if avg_col in df.columns:
-            volatility_exprs.append(
-                (pl.col(f"{col}_std6") / (pl.col(avg_col).abs() + 1)).alias(f"{col}_cv6")
-            )
-        
         # Range (max - min)
         if max_col in df.columns and min_col in df.columns:
-            volatility_exprs.append(
+            volatility_exprs_step1.append(
                 (pl.col(max_col) - pl.col(min_col)).alias(f"{col}_rango6")
             )
     
-    if volatility_exprs:
-        df = df.with_columns(volatility_exprs)
+    if volatility_exprs_step1:
+        df = df.with_columns(volatility_exprs_step1)
     
-    print(f"  Added {len(volatility_exprs)} volatility features")
+    # Step 1b: Now create CV features using the std6 columns we just created
+    volatility_exprs_step2 = []
+    
+    for col in key_cols:
+        avg_col = f"{col}_avg6"
+        std_col = f"{col}_std6"
+        
+        # Coefficient of variation (CV = std / mean)
+        if avg_col in df.columns and std_col in df.columns:
+            volatility_exprs_step2.append(
+                (pl.col(std_col) / (pl.col(avg_col).abs() + 1)).alias(f"{col}_cv6")
+            )
+    
+    if volatility_exprs_step2:
+        df = df.with_columns(volatility_exprs_step2)
+    
+    print(f"  Added {len(volatility_exprs_step1) + len(volatility_exprs_step2)} volatility features")
     
     # =========================================================================
     # 2. ACCELERATION FEATURES (Second derivative - change in the change)
@@ -182,7 +193,9 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     # 5. OUTLIER & ANOMALY FEATURES (Z-scores and outlier detection)
     # =========================================================================
     print("\n5. Adding outlier detection features...")
-    outlier_exprs = []
+    
+    # Step 5a: Calculate z-scores first
+    outlier_exprs_step1 = []
     
     for col in key_cols:
         avg_col = f"{col}_avg6"
@@ -190,20 +203,30 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
         
         # Z-score
         if avg_col in df.columns and std_col in df.columns and col in df.columns:
-            outlier_exprs.append(
+            outlier_exprs_step1.append(
                 ((pl.col(col) - pl.col(avg_col)) / (pl.col(std_col) + 1))
                 .alias(f"{col}_zscore")
             )
-            
-            # Is outlier? (|z| > 2)
-            outlier_exprs.append(
-                (pl.col(f"{col}_zscore").abs() > 2)
+    
+    if outlier_exprs_step1:
+        df = df.with_columns(outlier_exprs_step1)
+    
+    # Step 5b: Now create outlier flags using the zscores we just created
+    outlier_exprs_step2 = []
+    
+    for col in key_cols:
+        zscore_col = f"{col}_zscore"
+        
+        # Is outlier? (|z| > 2)
+        if zscore_col in df.columns:
+            outlier_exprs_step2.append(
+                (pl.col(zscore_col).abs() > 2)
                 .cast(pl.Int32)
                 .alias(f"{col}_es_outlier")
             )
     
-    if outlier_exprs:
-        df = df.with_columns(outlier_exprs)
+    if outlier_exprs_step2:
+        df = df.with_columns(outlier_exprs_step2)
     
     # Count recent outliers
     outlier_count_exprs = []
@@ -219,7 +242,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     if outlier_count_exprs:
         df = df.with_columns(outlier_count_exprs)
     
-    print(f"  Added {len(outlier_exprs) + len(outlier_count_exprs)} outlier features")
+    print(f"  Added {len(outlier_exprs_step1) + len(outlier_exprs_step2) + len(outlier_count_exprs)} outlier features")
     
     # =========================================================================
     # 6. PRODUCT INTERACTION FEATURES (Ratios between products)
@@ -340,7 +363,9 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     # 8. BINARY CHANGE FEATURES (State changes)
     # =========================================================================
     print("\n8. Adding binary change features...")
-    binary_exprs = []
+    
+    # Step 8a: Create binary flags first
+    binary_exprs_step1 = []
     
     # Check for key product columns
     binary_cols = ["ccaja_ahorro", "ccuenta_corriente", "ctarjeta_visa", 
@@ -349,20 +374,29 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     for col in binary_cols:
         if col in df.columns:
             # Has the product? (binary)
-            binary_exprs.append(
+            binary_exprs_step1.append(
                 (pl.col(col) > 0).cast(pl.Int32).alias(f"tiene_{col}")
             )
-            
+    
+    if binary_exprs_step1:
+        df = df.with_columns(binary_exprs_step1)
+    
+    # Step 8b: Now create change flags using the binary columns we just created
+    binary_exprs_step2 = []
+    
+    for col in binary_cols:
+        tiene_col = f"tiene_{col}"
+        if tiene_col in df.columns:
             # State changed?
-            binary_exprs.append(
-                (pl.col(f"tiene_{col}") != 
-                 pl.col(f"tiene_{col}").shift(1).over("numero_de_cliente"))
+            binary_exprs_step2.append(
+                (pl.col(tiene_col) != 
+                 pl.col(tiene_col).shift(1).over("numero_de_cliente"))
                 .cast(pl.Int32)
                 .alias(f"cambio_{col}")
             )
     
-    if binary_exprs:
-        df = df.with_columns(binary_exprs)
+    if binary_exprs_step2:
+        df = df.with_columns(binary_exprs_step2)
     
     # Count changes in last 6 months
     change_count_exprs = []
@@ -378,7 +412,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
     if change_count_exprs:
         df = df.with_columns(change_count_exprs)
     
-    print(f"  Added {len(binary_exprs) + len(change_count_exprs)} binary change features")
+    print(f"  Added {len(binary_exprs_step1) + len(binary_exprs_step2) + len(change_count_exprs)} binary change features")
     
     # =========================================================================
     # 9. AGE & TENURE INTERACTIONS
