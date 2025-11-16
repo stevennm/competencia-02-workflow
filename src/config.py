@@ -4,8 +4,8 @@ Configuration file for the LightGBM workflow with Bayesian Optimization
 
 PARAM = {
     # Experiment configuration
-    "experimento": "sin_pandemia_conparamsexp2",
-    "semilla_primigenia": 102191,
+    "experimento": "experimento_allfeatures_p_202106",
+    "semilla_primigenia": 123479,
     
     # Feature Engineering - Random Forest
     "FE_rf": {
@@ -39,8 +39,8 @@ PARAM = {
         "training": [
             201901, 201902, 201903, 201904, 201905, 201906,
             201907, 201908, 201909, 201910, 201911, 201912,
-            202001, 202002, #202003, 202004, 202005, 202006,
-            #202007, 202008, 202009, 202010, 
+            202001, 202002, 202003, 202004, 202005, 202006,
+            202007, 202008, 202009, 202010, 
             202011, 202012,
             202101, 202102 #, 202103, 202104
         ],
@@ -50,7 +50,7 @@ PARAM = {
     
     # Hyperparameter Tuning
     "hipeparametertuning": {
-        "BO_iteraciones": 0,  # Set to 0 to skip Bayesian Optimization
+        "BO_iteraciones": 50,  # Set to 0 to skip Bayesian Optimization
         # Multi-seed ensemble during BO (optional, increases robustness but slower)
         "ksemillerio": 3,  # Number of models with different seeds per trial (1=fast, 5=robust)
         "repe": 2          # Number of repetitions to average (1=fast, 3=very robust)
@@ -92,8 +92,8 @@ PARAM = {
         "training": [
             201901, 201902, 201903, 201904, 201905, 201906,
             201907, 201908, 201909, 201910, 201911, 201912,
-            202001, 202002, #202003, 202004, 202005, 202006,
-            #202007, 202008, 202009, 202010, 
+            202001, 202002, 202003, 202004, 202005, 202006,
+            202007, 202008, 202009, 202010, 
             202011, 202012,
             202101, 202102, 202103, 202104 #, 202105, 202106
         ],

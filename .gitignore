@@ -50,3 +50,4 @@ data/featured_data.parquet
 data/final_dataset.parquet
 output/*/modelitos/
 output/modelitos
+data/*.gz
