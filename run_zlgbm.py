@@ -17,10 +17,50 @@ import polars as pl
 
 # Import modules
 from src.config import PARAM
-from src.preprocessing import load_data, add_canaritos
 from src.training_zlgbm import train_zlgbm_final_model
 from src.scoring_zlgbm import score_zlgbm_future_data, generate_zlgbm_submission
 from src.bucket_utils import get_bucket_info, sync_output_to_bucket
+
+# Import preprocessing utilities (now in preprocessing package)
+# Note: We don't need load_data or add_canaritos since we use preprocessed data
+import numpy as np
+
+
+def add_canaritos(df: pl.DataFrame, n_canaritos: int, seed: int) -> tuple[pl.DataFrame, list[str]]:
+    """
+    Add canary features (random noise) to detect overfitting
+    
+    Args:
+        df: Input DataFrame
+        n_canaritos: Number of canary features to add
+        seed: Random seed
+        
+    Returns:
+        Tuple of (DataFrame with canaries, list of canary names)
+    """
+    print(f"Adding {n_canaritos} canary features...")
+    
+    np.random.seed(seed)
+    n_rows = df.shape[0]
+    
+    # Generate canary features (random uniform between 0 and 1)
+    canaritos_data = {}
+    canaritos_names = []
+    
+    for i in range(n_canaritos):
+        canary_name = f"canarito_{i+1}"
+        canaritos_names.append(canary_name)
+        canaritos_data[canary_name] = np.random.uniform(0, 1, n_rows)
+    
+    # Create DataFrame with canaries
+    df_canaritos = pl.DataFrame(canaritos_data)
+    
+    # Add canaries to the beginning of the DataFrame
+    df = pl.concat([df_canaritos, df], how="horizontal")
+    
+    print(f"✓ Added {n_canaritos} canaries at the beginning")
+    
+    return df, canaritos_names
 
 
 def setup_logging():
