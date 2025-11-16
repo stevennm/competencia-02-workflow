@@ -1,15 +1,15 @@
 """
 Training module for zLightGBM (without Bayesian Optimization)
-
-zLightGBM uses canary features for automatic overfitting control,
-eliminating the need for hyperparameter optimization.
 """
 
 import polars as pl
 import numpy as np
 import lightgbm as lgb
+import logging
 from typing import Dict, List
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_month_weights(months: np.ndarray, strategy: str = "equal") -> np.ndarray:
@@ -108,23 +108,13 @@ def calculate_month_difference(month1: int, month2: int) -> int:
 
 def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) -> None:
     """
-    Train final model(s) using zLightGBM (no Bayesian Optimization needed)
-    
-    Key differences from standard LightGBM:
-    - Uses canary features for overfitting control
-    - Stops automatically when it can't improve
-    - Supports ensemble training with multiple seeds (ksemillerio)
-    - Each model uses different undersampling of negative class
+    Train final model(s) using zLightGBM
     
     Args:
         df: Input DataFrame (must already have canaries at the beginning)
         config: Configuration dictionary
         campos_buenos: List of feature columns (canaries must be first)
     """
-    print("\n" + "="*70)
-    print("TRAINING FINAL MODEL(S) WITH zLightGBM")
-    print("="*70)
-    
     # Get zLightGBM configuration
     zlgbm_config = config["zlgbm"]
     n_canaritos = zlgbm_config["qcanaritos"]
@@ -132,11 +122,9 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     undersampling = zlgbm_config["train_final"]["undersampling"]
     ksemillerio = zlgbm_config["train_final"]["ksemillerio"]
     
-    print(f"\nConfiguration:")
-    print(f"  Training months: {training_months}")
-    print(f"  Undersampling: {undersampling} ({undersampling*100:.0f}%)")
-    print(f"  Canaries: {n_canaritos}")
-    print(f"  Ensemble size (ksemillerio): {ksemillerio}")
+    logger.info(f"Training {ksemillerio} model(s)")
+    logger.info(f"Undersampling: {undersampling}")
+    logger.info(f"Canaries: {n_canaritos}")
     
     # Verify canaries are at the beginning
     expected_canaritos = [f"canarito_{i+1}" for i in range(n_canaritos)]
@@ -148,8 +136,6 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             f"Expected: {expected_canaritos[:5]}...\n"
             f"Got: {actual_first_cols[:5]}..."
         )
-    
-    print(f"✓ Canaries verified at the beginning")
     
     # Prepare binary target
     df = df.with_columns([
@@ -182,17 +168,11 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         )
     
     semillas_to_use = SEMILLAS[:ksemillerio]
-    
-    print(f"\n{'='*70}")
-    print(f"TRAINING {ksemillerio} MODEL(S) FOR ENSEMBLE")
-    print(f"{'='*70}")
-    print(f"Seeds to use: {semillas_to_use}")
+    logger.info(f"Seeds: {semillas_to_use}")
     
     # Train each model with different seed
     for i, semilla in enumerate(semillas_to_use, 1):
-        print(f"\n{'='*70}")
-        print(f"MODEL {i}/{ksemillerio} - SEED {semilla}")
-        print(f"{'='*70}")
+        logger.info(f"Training model {i}/{ksemillerio} (seed {semilla})")
         
         # Set seed for this model
         np.random.seed(semilla)
@@ -212,28 +192,14 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         y_train = df_train.select("clase01").to_numpy().ravel()
         months_train = df_train.select("foto_mes").to_numpy().ravel()
         
-        print(f"\nTraining data (seed {semilla}):")
-        print(f"  Samples: {X_train.shape[0]:,}")
-        print(f"  Features: {X_train.shape[1]:,} (including {n_canaritos} canaries)")
-        print(f"  Positives: {y_train.sum():,} ({y_train.sum()/len(y_train)*100:.2f}%)")
-        print(f"  Negatives: {len(y_train) - y_train.sum():,}")
+        logger.info(f"Samples: {X_train.shape[0]:,}, Features: {X_train.shape[1]:,}, Positives: {y_train.sum():,} ({y_train.sum()/len(y_train)*100:.2f}%)")
         
         # Calculate month weights
         month_weight_strategy = zlgbm_config["train_final"].get("month_weights", "equal")
         sample_weights = calculate_month_weights(months_train, month_weight_strategy)
         
-        print(f"\nMonth weighting strategy: {month_weight_strategy}")
-        if month_weight_strategy != "equal":
-            unique_months = np.unique(months_train)
-            unique_months.sort()
-            print(f"  Sample month weights:")
-            for month in unique_months[:2]:  # First 2 months
-                weight = sample_weights[months_train == month][0]
-                print(f"    {month}: {weight:.3f}")
-            print(f"    ...")
-            for month in unique_months[-2:]:  # Last 2 months
-                weight = sample_weights[months_train == month][0]
-                print(f"    {month}: {weight:.3f}")
+        if i == 1:  # Only log once
+            logger.info(f"Month weighting: {month_weight_strategy}")
         
         # Save month weights to file (only for first model)
         if i == 1:
@@ -262,7 +228,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
                 f.write(f"  Weight range: [{sample_weights.min():.4f}, {sample_weights.max():.4f}]\n")
                 f.write(f"  Mean weight: {sample_weights.mean():.4f}\n")
             
-            print(f"✓ Month weights saved to {weights_file}")
+            logger.info(f"Month weights saved to {weights_file}")
         
         # Create LightGBM dataset with weights
         dtrain = lgb.Dataset(X_train, label=y_train, weight=sample_weights,
@@ -272,20 +238,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         lgb_params = zlgbm_config["param"].copy()
         lgb_params["seed"] = semilla  # Use ensemble seed, not base seed
         
-        if i == 1:  # Only print params once
-            print(f"\nzLightGBM parameters:")
-            print(f"  canaritos: {lgb_params['canaritos']}")
-            print(f"  gradient_bound: {lgb_params['gradient_bound']}")
-            print(f"  learning_rate: {lgb_params['learning_rate']}")
-            print(f"  feature_fraction: {lgb_params['feature_fraction']}")
-            print(f"  min_data_in_leaf: {lgb_params['min_data_in_leaf']}")
-            print(f"  num_iterations (max): {lgb_params['num_iterations']}")
-            print(f"  num_leaves (max): {lgb_params['num_leaves']}")
-        
         # Train model
-        print(f"\nTraining model {i}/{ksemillerio} (seed {semilla})...")
-        print(f"  zLightGBM will stop automatically when overfitting is detected")
-        
         modelo = lgb.train(
             lgb_params,
             dtrain,
@@ -294,8 +247,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         
         # Get model info
         n_trees = modelo.num_trees()
-        
-        print(f"✓ Training complete: {n_trees} trees built (max was {lgb_params['num_iterations']})")
+        logger.info(f"Model {i}/{ksemillerio} trained: {n_trees} trees")
         
         # Save model with seed suffix
         if ksemillerio == 1:
@@ -303,7 +255,6 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         else:
             model_file = output_dir / f"zmodelo_{semilla}.txt"
         
-        print(f"  Saving to {model_file}...")
         try:
             modelo.save_model(str(model_file))
             
@@ -315,12 +266,11 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             if file_size == 0:
                 raise IOError(f"Model file is empty: {model_file}")
             
-            print(f"  ✓ Model {i}/{ksemillerio} saved: {file_size / (1024*1024):.2f} MB")
+            logger.info(f"Model saved: {file_size / (1024*1024):.2f} MB")
             
         except Exception as e:
-            error_msg = f"CRITICAL ERROR: Failed to save model {i}: {e}"
-            print(f"\n❌ {error_msg}")
-            raise RuntimeError(error_msg) from e
+            logger.error(f"Failed to save model {i}: {e}")
+            raise RuntimeError(f"Failed to save model {i}: {e}") from e
         
         # Save feature importance for this model
         try:
@@ -352,21 +302,21 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
                 importance_file = output_dir / f"feature_importance_{semilla}.txt"
             
             importance_df.write_csv(importance_file, separator="\t")
-            print(f"  ✓ Feature importance saved: {len(importance_df)} features")
+            logger.info(f"Feature importance saved: {len(importance_df)} features")
             
             # Canary analysis
             canary_df = importance_df.filter(pl.col('is_canary'))
             canary_mean = canary_df['importance'].mean()
             
             if canary_mean == 0:
-                print(f"  ✓ Canaries have ZERO importance (no overfitting)")
+                logger.info("Canaries have ZERO importance")
             else:
                 real_mean = importance_df.filter(~pl.col('is_canary'))['importance'].mean()
                 ratio = real_mean / canary_mean if canary_mean > 0 else float('inf')
-                print(f"  ⚠ Canary avg importance: {canary_mean:.1f} (ratio real/canary: {ratio:.2f}x)")
+                logger.warning(f"Canary avg importance: {canary_mean:.1f} (ratio: {ratio:.2f}x)")
             
         except Exception as e:
-            print(f"  ⚠ Could not save feature importance: {e}")
+            logger.warning(f"Could not save feature importance: {e}")
         
         # Clean up to free memory
         del X_train, y_train, months_train, sample_weights, dtrain, modelo
@@ -376,28 +326,5 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
             del df_with_azar
     
     # Final summary
-    print(f"\n{'='*70}")
-    print(f"ENSEMBLE TRAINING COMPLETED")
-    print(f"{'='*70}")
-    print(f"  Models trained: {ksemillerio}")
-    print(f"  Seeds used: {semillas_to_use}")
-    print(f"  Output directory: {output_dir}")
-    
-    if ksemillerio > 1:
-        print(f"\n  Model files:")
-        for semilla in semillas_to_use:
-            model_file = output_dir / f"zmodelo_{semilla}.txt"
-            if model_file.exists():
-                size_mb = model_file.stat().st_size / (1024 * 1024)
-                print(f"    - zmodelo_{semilla}.txt ({size_mb:.2f} MB)")
-    else:
-        model_file = output_dir / "zmodelo.txt"
-        if model_file.exists():
-            size_mb = model_file.stat().st_size / (1024 * 1024)
-            print(f"  Model file: zmodelo.txt ({size_mb:.2f} MB)")
-    
-    print(f"\n✓ All models trained and saved successfully")
-    print(f"\n{'='*70}")
-    print("zLightGBM ENSEMBLE TRAINING COMPLETED SUCCESSFULLY")
-    print(f"{'='*70}")
+    logger.info(f"Training completed: {ksemillerio} model(s) saved to {output_dir}")
 

@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "comp2_entrega3_202108_under0.1",
+    "experimento": "comp2_entrega4_202108_under0.05_zero",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
@@ -33,7 +33,7 @@ PARAM = {
             202101, 202102, 202103, 202104 , 202105, 202106
             ], # From notebook
             "future": [202108],
-            "undersampling": 0.1,  # Conservative (50%)
+            "undersampling": 0.05,  # Conservative (50%)
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
             
             # Month weighting strategy

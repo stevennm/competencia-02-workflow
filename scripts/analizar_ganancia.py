@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # CONFIGURACION - CAMBIA ESTO
 # ============================================================================
 
-EXPERIMENTO = "model_until_202104_p202106_linearweight_zlgbm"                       # Nombre del experimento
+EXPERIMENTO = "comp2_entrega2_test202106_under0.05_zlgbm"                       # Nombre del experimento
 TARGET_FILE = "data/competencia_02_target.parquet"             # Archivo con labels reales
 MES_COMPARAR = 202106                                          # Mes contra el que comparar
 GAIN_BAJA2 = 780000                                            # Ganancia por BAJA+2

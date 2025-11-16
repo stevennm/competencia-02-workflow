@@ -38,7 +38,8 @@ def add_canaritos(df: pl.DataFrame, n_canaritos: int, seed: int) -> tuple[pl.Dat
     Returns:
         Tuple of (DataFrame with canaries, list of canary names)
     """
-    print(f"Adding {n_canaritos} canary features...")
+    logger = logging.getLogger(__name__)
+    logger.info(f"Adding {n_canaritos} canary features")
     
     np.random.seed(seed)
     n_rows = df.shape[0]
@@ -58,7 +59,7 @@ def add_canaritos(df: pl.DataFrame, n_canaritos: int, seed: int) -> tuple[pl.Dat
     # Add canaries to the beginning of the DataFrame
     df = pl.concat([df_canaritos, df], how="horizontal")
     
-    print(f"✓ Added {n_canaritos} canaries at the beginning")
+    logger.info(f"Added {n_canaritos} canaries at the beginning of DataFrame")
     
     return df, canaritos_names
 
@@ -86,17 +87,6 @@ def setup_logging():
     return logger
 
 
-def print_section(title: str):
-    """Print a formatted section header"""
-    separator = "="*70
-    print(f"\n{separator}")
-    print(f"  {title}")
-    print(separator)
-    logging.info(separator)
-    logging.info(f"  {title}")
-    logging.info(separator)
-
-
 def main():
     """Main execution function for zLightGBM workflow"""
     start_time = time.time()
@@ -104,7 +94,7 @@ def main():
     # Setup logging
     logger = setup_logging()
     
-    print_section(f"zLightGBM WORKFLOW - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"ZLIGHTGBM WORKFLOW - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Update experiment name for zLightGBM
     PARAM["experimento"] = f"{PARAM['experimento']}_zlgbm"
@@ -115,9 +105,8 @@ def main():
     
     if experiment_dir.exists():
         error_msg = f"ERROR: Experiment '{experimento}' already exists at output/{experimento}/"
-        print(f"\n❌ {error_msg}")
-        print(f"💡 Change experiment name in config.py or delete the directory")
         logger.error(error_msg)
+        logger.error("Change experiment name in config.py or delete the directory")
         raise FileExistsError(error_msg)
     
     # Log experiment configuration
@@ -128,54 +117,30 @@ def main():
     logger.info("="*70)
     logger.info(f"Experiment: {PARAM['experimento']}")
     logger.info(f"Seed: {PARAM['semilla_primigenia']}")
-    logger.info(f"Mode: zLightGBM (no Bayesian Optimization)")
-    logger.info("")
-    logger.info("Training Strategy:")
-    logger.info(f"  Training months: {zlgbm_config['train_final']['training']}")
-    logger.info(f"  Future months: {zlgbm_config['train_final']['future']}")
-    logger.info(f"  Undersampling: {zlgbm_config['train_final']['undersampling']} ({zlgbm_config['train_final']['undersampling']*100:.0f}%)")
-    logger.info(f"  Models in ensemble: {zlgbm_config['train_final']['ksemillerio']}")
-    logger.info("")
-    logger.info("zLightGBM Parameters:")
-    logger.info(f"  Canaries: {zlgbm_config['qcanaritos']}")
-    logger.info(f"  gradient_bound: {zlgbm_config['param']['gradient_bound']}")
-    logger.info(f"  learning_rate: {zlgbm_config['param']['learning_rate']}")
-    logger.info(f"  feature_fraction: {zlgbm_config['param']['feature_fraction']}")
-    logger.info(f"  min_data_in_leaf: {zlgbm_config['param']['min_data_in_leaf']}")
-    logger.info(f"  max_bin: {zlgbm_config['param']['max_bin']}")
-    logger.info(f"  num_iterations (max): {zlgbm_config['param']['num_iterations']}")
-    logger.info(f"  num_leaves (max): {zlgbm_config['param']['num_leaves']}")
+    logger.info(f"Training months: {zlgbm_config['train_final']['training']}")
+    logger.info(f"Future months: {zlgbm_config['train_final']['future']}")
+    logger.info(f"Undersampling: {zlgbm_config['train_final']['undersampling']}")
+    logger.info(f"Ensemble models: {zlgbm_config['train_final']['ksemillerio']}")
+    logger.info(f"Canaries: {zlgbm_config['qcanaritos']}")
+    logger.info(f"gradient_bound: {zlgbm_config['param']['gradient_bound']}")
+    logger.info(f"learning_rate: {zlgbm_config['param']['learning_rate']}")
+    logger.info(f"feature_fraction: {zlgbm_config['param']['feature_fraction']}")
+    logger.info(f"min_data_in_leaf: {zlgbm_config['param']['min_data_in_leaf']}")
+    logger.info(f"max_bin: {zlgbm_config['param']['max_bin']}")
+    logger.info(f"num_iterations: {zlgbm_config['param']['num_iterations']}")
+    logger.info(f"num_leaves: {zlgbm_config['param']['num_leaves']}")
     logger.info("="*70)
-    
-    print(f"\n🚀 Mode: zLightGBM")
-    print(f"Experiment: {PARAM['experimento']}")
-    print(f"Seed: {PARAM['semilla_primigenia']}")
-    print(f"\n📊 Configuration:")
-    print(f"  Training months: {zlgbm_config['train_final']['training']}")
-    print(f"  Future months: {zlgbm_config['train_final']['future']}")
-    print(f"  Undersampling: {zlgbm_config['train_final']['undersampling']*100:.0f}%")
-    print(f"  Canaries: {zlgbm_config['qcanaritos']}")
-    print(f"  gradient_bound: {zlgbm_config['param']['gradient_bound']}")
-    print(f"  feature_fraction: {zlgbm_config['param']['feature_fraction']}")
     
     # Log bucket configuration
     bucket_info = get_bucket_info(PARAM)
     if bucket_info["enabled"]:
-        logger.info("")
-        logger.info("Bucket Configuration:")
-        logger.info(f"  Enabled: Yes")
-        logger.info(f"  Path: {bucket_info['base_path']}")
-        logger.info(f"  Exists: {bucket_info['exists']}")
-        print(f"\n💾 Bucket: {bucket_info['base_path']}")
+        logger.info(f"Bucket: {bucket_info['base_path']}")
     else:
         logger.info("Bucket: Disabled")
-        print(f"\n💾 Bucket: Disabled")
     
     try:
-        # =====================================================================
-        # STEP 1: LOAD PREPROCESSED DATA
-        # =====================================================================
-        print_section("STEP 1: LOAD PREPROCESSED DATA")
+        # Load preprocessed data
+        logger.info("Loading preprocessed data")
         
         # Assuming you already have preprocessed data with feature engineering
         data_file = "data/final_dataset.parquet"
@@ -193,33 +158,32 @@ def main():
             )
         
         df = pl.read_parquet(data_file)
-        logger.info(f"Loaded data: {df.shape[0]:,} rows, {df.shape[1]:,} columns")
-        logger.info(f"Columns: {len(df.columns)}")
+        logger.info(f"Loaded: {df.shape[0]:,} rows, {df.shape[1]:,} columns")
         
-        # Log month distribution
-        month_counts = df.group_by("foto_mes").agg(pl.count().alias("count")).sort("foto_mes")
-        logger.info("Month distribution:")
-        for row in month_counts.iter_rows():
-            logger.info(f"  {row[0]}: {row[1]:,} records")
+        # Replace 100% zero columns with nulls
+        zero_cols = []
+        for col in df.columns:
+            if col not in ["numero_de_cliente", "foto_mes", "clase_ternaria"]:
+                if df[col].dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.Float32, pl.Float64]:
+                    if (df[col] == 0).all():
+                        zero_cols.append(col)
         
-        print(f"Dataset loaded: {df.shape[0]:,} rows, {df.shape[1]:,} columns")
+        if zero_cols:
+            logger.info(f"Replacing {len(zero_cols)} 100% zero columns with nulls:")
+            for col in zero_cols:
+                logger.info(f"  - {col}")
+            df = df.with_columns([pl.lit(None).alias(col) for col in zero_cols])
         
-        # =====================================================================
-        # STEP 2: ADD CANARY FEATURES
-        # =====================================================================
-        print_section("STEP 2: ADD CANARY FEATURES")
+        # Add canary features
+        logger.info("Adding canary features")
         
         n_canaritos = PARAM["zlgbm"]["qcanaritos"]
         df, canaritos_names = add_canaritos(df, n_canaritos, PARAM["semilla_primigenia"])
         
-        logger.info(f"Added {n_canaritos} canaries")
-        print(f"\n✓ Added {n_canaritos} canary features")
-        print(f"✓ New dataset shape: {df.shape}")
+        logger.info(f"New dataset shape: {df.shape}")
         
-        # =====================================================================
-        # STEP 3: PREPARE FEATURE LIST
-        # =====================================================================
-        print_section("STEP 3: PREPARE FEATURES")
+        # Prepare feature list
+        logger.info("Preparing feature list")
         
         # Get base features (excluding identifiers and target)
         campos_buenos_base = [col for col in df.columns 
@@ -230,119 +194,54 @@ def main():
         campos_buenos = canaritos_names + campos_buenos_base
         
         logger.info(f"Total features: {len(campos_buenos):,}")
-        logger.info(f"  Canaries: {len(canaritos_names)}")
-        logger.info(f"  Real features: {len(campos_buenos_base):,}")
-        logger.info(f"  First 5 features: {campos_buenos[:5]}")
-        logger.info(f"  Last 5 features: {campos_buenos[-5:]}")
-        
-        print(f"\nFeature composition:")
-        print(f"  Canaries: {len(canaritos_names)}")
-        print(f"  Real features: {len(campos_buenos_base):,}")
-        print(f"  Total: {len(campos_buenos):,}")
+        logger.info(f"Canaries: {len(canaritos_names)}")
+        logger.info(f"Real features: {len(campos_buenos_base):,}")
         
         # Verify canaries are first
         if campos_buenos[:n_canaritos] != canaritos_names:
             raise ValueError("ERROR: Canaries are not at the beginning of feature list!")
         
-        print(f"✓ Canaries verified at the beginning")
+        logger.info("Canaries verified at the beginning of feature list")
         
-        # =====================================================================
-        # STEP 4: TRAIN zLightGBM MODEL
-        # =====================================================================
-        print_section("STEP 4: TRAIN zLightGBM MODEL")
-        
-        logger.info("Training zLightGBM model...")
-        logger.info(f"Training months: {zlgbm_config['train_final']['training']}")
-        logger.info(f"Undersampling: {zlgbm_config['train_final']['undersampling']}")
+        # Train model
+        logger.info("Training zLightGBM model")
         train_zlgbm_final_model(df, PARAM, campos_buenos)
-        logger.info("Model trained successfully")
         
-        # =====================================================================
-        # STEP 5: SCORE FUTURE DATA
-        # =====================================================================
-        print_section("STEP 5: SCORE FUTURE DATA")
+        # Score future data
+        logger.info("Scoring future data")
         
-        logger.info("Scoring future data...")
-        logger.info(f"Future months: {zlgbm_config['train_final']['future']}")
         df_pred = score_zlgbm_future_data(df, PARAM, campos_buenos)
         logger.info(f"Scored {len(df_pred):,} predictions")
-        logger.info(f"Prediction stats:")
-        logger.info(f"  Min prob: {df_pred['prob'].min():.6f}")
-        logger.info(f"  Max prob: {df_pred['prob'].max():.6f}")
-        logger.info(f"  Mean prob: {df_pred['prob'].mean():.6f}")
-        logger.info(f"  Median prob: {df_pred['prob'].median():.6f}")
+        logger.info(f"Min: {df_pred['prob'].min():.6f}, Max: {df_pred['prob'].max():.6f}, Mean: {df_pred['prob'].mean():.6f}")
         
-        # =====================================================================
-        # STEP 6: GENERATE KAGGLE SUBMISSION
-        # =====================================================================
-        print_section("STEP 6: GENERATE KAGGLE SUBMISSION")
-        
+        # Generate Kaggle submission
+        logger.info("Generating Kaggle submission")
         n_envios = 11000
-        logger.info("Generating Kaggle submission...")
-        logger.info(f"Cutoff: {n_envios:,} envíos")
         generate_zlgbm_submission(df_pred, PARAM, n_envios=n_envios)
-        logger.info(f"Submission file: output/kaggle/KA{PARAM['experimento']}_{n_envios}.csv")
+        logger.info(f"Submission: output/kaggle/KA{PARAM['experimento']}_{n_envios}.csv")
         
-        # =====================================================================
-        # STEP 7: SYNC TO BUCKET
-        # =====================================================================
+        # Sync to bucket
         if PARAM.get("bucket", {}).get("enabled", False):
-            print_section("STEP 7: SYNC TO BUCKET")
-            logger.info("Syncing outputs to bucket...")
+            logger.info("Syncing to bucket")
             sync_output_to_bucket(PARAM, logger)
-            logger.info("Bucket sync complete")
         
-        # =====================================================================
-        # COMPLETION
-        # =====================================================================
+        # Completion
         elapsed_time = time.time() - start_time
         hours = int(elapsed_time // 3600)
         minutes = int((elapsed_time % 3600) // 60)
         seconds = int(elapsed_time % 60)
-        
-        print_section("zLightGBM WORKFLOW COMPLETED SUCCESSFULLY")
-        
         time_str = f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
-        logger.info(f"Total execution time: {time_str}")
+        
+        logger.info(f"WORKFLOW COMPLETED - {time_str}")
         logger.info(f"Experiment: {PARAM['experimento']}")
-        
-        print(f"\n⏱️  Total execution time: {time_str}")
-        print(f"📁 Experiment: {PARAM['experimento']}")
-        print(f"\n📊 Output files:")
-        print(f"  - output/{experimento}/zmodelo.txt (zLightGBM model)")
-        print(f"  - output/{experimento}/tb_arboles.txt (Tree structure)")
-        print(f"  - output/{experimento}/prediccion.txt (Predictions)")
-        print(f"  - output/kaggle/KA{PARAM['experimento']}_11000.csv (Submission)")
-        
-        print(f"\n💡 Key advantages of zLightGBM:")
-        print(f"  ✓ No Bayesian Optimization needed (faster)")
-        print(f"  ✓ Automatic overfitting control (canaries)")
-        print(f"  ✓ Single model (no ensemble needed)")
-        print(f"  ✓ Self-stopping (optimal tree count)")
-        
-        logger.info("All output files saved successfully")
-        logger.info("="*70)
-        logger.info("zLightGBM WORKFLOW COMPLETED SUCCESSFULLY")
-        logger.info("="*70)
+        logger.info(f"Output: output/{experimento}/")
         
         return 0
         
     except Exception as e:
-        error_msg = f"ERROR: {str(e)}"
-        print(f"\n{'='*70}")
-        print(error_msg)
-        print(f"{'='*70}")
-        
-        logging.error(error_msg)
-        logging.error("="*70)
-        
         import traceback
-        traceback.print_exc()
-        
-        # Log full traceback
-        logging.error("Full traceback:")
-        logging.error(traceback.format_exc())
-        
+        logger.error(f"ERROR: {str(e)}")
+        logger.error(traceback.format_exc())
         return 1
 
 
