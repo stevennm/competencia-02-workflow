@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "experimento_colab_step_202106",
+    "experimento": "experimento_colab_linear_202106",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
@@ -37,7 +37,7 @@ PARAM = {
             "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
             
             # Month weighting strategy
-            "month_weights": "step",  # Options: "equal", "step", "linear", "exponential"
+            "month_weights": "linear",  # Options: "equal", "step", "linear", "exponential"
         },
         
         # zLightGBM parameters
