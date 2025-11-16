@@ -67,7 +67,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
         # Standard deviation over 6 months
         if col in df.columns:
             volatility_exprs.append(
-                pl.col(col).rolling_std(window_size=6, min_periods=2)
+                pl.col(col).rolling_std(window_size=6, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_std6")
             )
@@ -211,7 +211,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
         outlier_col = f"{col}_es_outlier"
         if outlier_col in df.columns:
             outlier_count_exprs.append(
-                pl.col(outlier_col).rolling_sum(window_size=3, min_periods=1)
+                pl.col(outlier_col).rolling_sum(window_size=3, min_samples=1)
                 .over("numero_de_cliente")
                 .alias(f"{col}_outliers_recientes")
             )
@@ -311,7 +311,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
         if col in df.columns:
             # Short-term average (3 months)
             multiwindow_exprs.append(
-                pl.col(col).rolling_mean(window_size=3, min_periods=2)
+                pl.col(col).rolling_mean(window_size=3, min_samples=2)
                 .over("numero_de_cliente")
                 .alias(f"{col}_avg3")
             )
@@ -370,7 +370,7 @@ def add_advanced_features(df: pl.DataFrame, cols_lagueables: List[str]) -> pl.Da
         cambio_col = f"cambio_{col}"
         if cambio_col in df.columns:
             change_count_exprs.append(
-                pl.col(cambio_col).rolling_sum(window_size=6, min_periods=1)
+                pl.col(cambio_col).rolling_sum(window_size=6, min_samples=1)
                 .over("numero_de_cliente")
                 .alias(f"cambios_{col}_6m")
             )
