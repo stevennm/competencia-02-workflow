@@ -11,7 +11,9 @@ from pathlib import Path
 
 def score_zlgbm_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) -> pl.DataFrame:
     """
-    Score future data using zLightGBM model
+    Score future data using zLightGBM model(s)
+    
+    If ksemillerio > 1, loads multiple models and averages their predictions (ensemble)
     
     IMPORTANT: Future data must also have canaries at the beginning
     
@@ -31,6 +33,7 @@ def score_zlgbm_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[
     zlgbm_config = config["zlgbm"]
     n_canaritos = zlgbm_config["qcanaritos"]
     future_months = zlgbm_config["train_final"]["future"]
+    ksemillerio = zlgbm_config["train_final"]["ksemillerio"]
     
     # Filter future month
     df_future = df.filter(pl.col("foto_mes").is_in(future_months))
@@ -38,6 +41,7 @@ def score_zlgbm_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[
     print(f"\nFuture data:")
     print(f"  Months: {future_months}")
     print(f"  Records: {df_future.shape[0]:,}")
+    print(f"  Ensemble size: {ksemillerio}")
     
     # Verify canaries exist
     expected_canaritos = [f"canarito_{i+1}" for i in range(n_canaritos)]
@@ -61,31 +65,74 @@ def score_zlgbm_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[
     
     print(f"  Features: {X_future.shape[1]:,} (including {n_canaritos} canaries)")
     
-    # Load model
+    # Setup paths
     experimento = config["experimento"]
-    model_file = Path(f"output/{experimento}/zmodelo.txt")
+    output_dir = Path(f"output/{experimento}")
     
-    if not model_file.exists():
-        raise FileNotFoundError(
-            f"Model not found: {model_file}\n"
-            f"Train the model first using train_zlgbm_final_model()"
-        )
+    # Predefined seeds (same as training)
+    SEMILLAS = [123479, 123491, 123493, 123499, 123503]
+    semillas_to_use = SEMILLAS[:ksemillerio]
     
-    print(f"\nLoading model from {model_file}...")
-    modelo = lgb.Booster(model_file=str(model_file))
+    print(f"\n{'='*70}")
+    print(f"LOADING {ksemillerio} MODEL(S) FOR ENSEMBLE PREDICTION")
+    print(f"{'='*70}")
     
-    n_trees = modelo.num_trees()
-    print(f"✓ Model loaded: {n_trees} trees")
+    all_predictions = []
     
-    # Make predictions
-    print("\nMaking predictions...")
-    predictions = modelo.predict(X_future)
+    for i, semilla in enumerate(semillas_to_use, 1):
+        # Determine model filename
+        if ksemillerio == 1:
+            model_file = output_dir / "zmodelo.txt"
+        else:
+            model_file = output_dir / f"zmodelo_{semilla}.txt"
+        
+        print(f"\nModel {i}/{ksemillerio} (seed={semilla}):")
+        print(f"  Loading from {model_file}...")
+        
+        if not model_file.exists():
+            raise FileNotFoundError(
+                f"Model not found: {model_file}\n"
+                f"Train the model first using train_zlgbm_final_model()"
+            )
+        
+        modelo = lgb.Booster(model_file=str(model_file))
+        n_trees = modelo.num_trees()
+        print(f"  ✓ Loaded: {n_trees} trees")
+        
+        # Predict
+        print(f"  Predicting...")
+        predictions = modelo.predict(X_future)
+        all_predictions.append(predictions)
+        
+        print(f"  ✓ Predictions: min={predictions.min():.6f}, max={predictions.max():.6f}, mean={predictions.mean():.6f}")
+        
+        # Clean up
+        del modelo
     
-    print(f"✓ Predictions complete")
-    print(f"  Min probability: {predictions.min():.6f}")
-    print(f"  Max probability: {predictions.max():.6f}")
-    print(f"  Mean probability: {predictions.mean():.6f}")
-    print(f"  Median probability: {np.median(predictions):.6f}")
+    # Average predictions (ensemble)
+    print(f"\n{'='*70}")
+    print(f"AVERAGING ENSEMBLE PREDICTIONS")
+    print(f"{'='*70}")
+    
+    all_predictions = np.array(all_predictions)  # Shape: (ksemillerio, n_samples)
+    avg_predictions = all_predictions.mean(axis=0)
+    
+    print(f"\nEnsemble statistics:")
+    print(f"  Models: {ksemillerio}")
+    print(f"  Final predictions:")
+    print(f"    Min: {avg_predictions.min():.6f}")
+    print(f"    Max: {avg_predictions.max():.6f}")
+    print(f"    Mean: {avg_predictions.mean():.6f}")
+    print(f"    Median: {np.median(avg_predictions):.6f}")
+    
+    if ksemillerio > 1:
+        # Show variance across models
+        std_predictions = all_predictions.std(axis=0)
+        print(f"  Prediction std dev (across models):")
+        print(f"    Mean: {std_predictions.mean():.6f}")
+        print(f"    Max: {std_predictions.max():.6f}")
+    
+    predictions = avg_predictions
     
     # Create prediction DataFrame
     df_pred = df_future.select(["numero_de_cliente", "foto_mes"]).with_columns([

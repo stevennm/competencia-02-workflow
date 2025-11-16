@@ -108,13 +108,13 @@ def calculate_month_difference(month1: int, month2: int) -> int:
 
 def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) -> None:
     """
-    Train final model using zLightGBM (no Bayesian Optimization needed)
+    Train final model(s) using zLightGBM (no Bayesian Optimization needed)
     
     Key differences from standard LightGBM:
     - Uses canary features for overfitting control
     - Stops automatically when it can't improve
-    - Only trains 1 model (no ensemble needed)
-    - More conservative undersampling (0.50 vs 0.10)
+    - Supports ensemble training with multiple seeds (ksemillerio)
+    - Each model uses different undersampling of negative class
     
     Args:
         df: Input DataFrame (must already have canaries at the beginning)
@@ -122,7 +122,7 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         campos_buenos: List of feature columns (canaries must be first)
     """
     print("\n" + "="*70)
-    print("TRAINING FINAL MODEL WITH zLightGBM")
+    print("TRAINING FINAL MODEL(S) WITH zLightGBM")
     print("="*70)
     
     # Get zLightGBM configuration
@@ -130,11 +130,13 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     n_canaritos = zlgbm_config["qcanaritos"]
     training_months = zlgbm_config["train_final"]["training"]
     undersampling = zlgbm_config["train_final"]["undersampling"]
+    ksemillerio = zlgbm_config["train_final"]["ksemillerio"]
     
     print(f"\nConfiguration:")
     print(f"  Training months: {training_months}")
     print(f"  Undersampling: {undersampling} ({undersampling*100:.0f}%)")
     print(f"  Canaries: {n_canaritos}")
+    print(f"  Ensemble size (ksemillerio): {ksemillerio}")
     
     # Verify canaries are at the beginning
     expected_canaritos = [f"canarito_{i+1}" for i in range(n_canaritos)]
@@ -157,324 +159,245 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         .alias("clase01")
     ])
     
-    # Undersampling with random column
-    np.random.seed(config["semilla_primigenia"])
-    azar = np.random.uniform(0, 1, df.shape[0])
-    df = df.with_columns([pl.Series("azar", azar)])
+    # Filter to training months only (before loop)
+    df_training_months = df.filter(pl.col("foto_mes").is_in(training_months))
     
-    # Mark training records (undersampling)
-    df = df.with_columns([
-        pl.when(
-            (pl.col("foto_mes").is_in(training_months)) &
-            ((pl.col("azar") <= undersampling) | 
-             (pl.col("clase_ternaria").is_in(["BAJA+1", "BAJA+2"])))
-        )
-        .then(pl.lit(1))
-        .otherwise(pl.lit(0))
-        .alias("training")
-    ])
-    
-    # Filter training data
-    df_train = df.filter(pl.col("training") == 1)
-    
-    # Get valid feature columns
+    # Get valid feature columns (same for all models)
     campos_buenos_valid = [col for col in campos_buenos
                           if col in df.columns and 
-                          col not in ["clase_ternaria", "clase01", "azar", "training",
-                                     "numero_de_cliente", "foto_mes"]]
+                          col not in ["clase_ternaria", "clase01", "numero_de_cliente", "foto_mes"]]
     
-    X_train = df_train.select(campos_buenos_valid).to_numpy()
-    y_train = df_train.select("clase01").to_numpy().ravel()
-    months_train = df_train.select("foto_mes").to_numpy().ravel()
-    
-    print(f"\nTraining data:")
-    print(f"  Samples: {X_train.shape[0]:,}")
-    print(f"  Features: {X_train.shape[1]:,} (including {n_canaritos} canaries)")
-    print(f"  Positives: {y_train.sum():,} ({y_train.sum()/len(y_train)*100:.2f}%)")
-    print(f"  Negatives: {len(y_train) - y_train.sum():,}")
-    
-    # Calculate month weights
-    month_weight_strategy = zlgbm_config["train_final"].get("month_weights", "equal")
-    sample_weights = calculate_month_weights(months_train, month_weight_strategy)
-    
-    print(f"\nMonth weighting strategy: {month_weight_strategy}")
-    if month_weight_strategy != "equal":
-        unique_months = np.unique(months_train)
-        unique_months.sort()
-        print(f"  Month weights:")
-        for month in unique_months[:3]:  # First 3 months
-            weight = sample_weights[months_train == month][0]
-            print(f"    {month}: {weight:.3f}")
-        print(f"    ...")
-        for month in unique_months[-3:]:  # Last 3 months
-            weight = sample_weights[months_train == month][0]
-            print(f"    {month}: {weight:.3f}")
-    
-    # Save month weights to file
+    # Setup output directory
     experimento = config["experimento"]
     output_dir = Path(f"output/{experimento}")
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    weights_file = output_dir / "month_weights.txt"
-    with open(weights_file, 'w') as f:
-        f.write(f"Month Weighting Strategy: {month_weight_strategy}\n")
-        f.write(f"Experiment: {experimento}\n")
-        f.write("="*50 + "\n\n")
-        
-        unique_months_sorted = np.unique(months_train)
-        unique_months_sorted.sort()
-        
-        f.write(f"{'Month':<10} {'Weight':<10} {'Samples':<10}\n")
-        f.write("-"*30 + "\n")
-        
-        for month in unique_months_sorted:
-            weight = sample_weights[months_train == month][0]
-            n_samples = (months_train == month).sum()
-            f.write(f"{month:<10} {weight:<10.4f} {n_samples:<10}\n")
-        
-        f.write("\n" + "="*50 + "\n")
-        f.write("Statistics:\n")
-        f.write(f"  Total samples: {len(sample_weights)}\n")
-        f.write(f"  Unique months: {len(unique_months_sorted)}\n")
-        f.write(f"  Weight range: [{sample_weights.min():.4f}, {sample_weights.max():.4f}]\n")
-        f.write(f"  Mean weight: {sample_weights.mean():.4f}\n")
+    # Predefined seeds (same as R notebook)
+    SEMILLAS = [123479, 123491, 123493, 123499, 123503]
     
-    print(f"✓ Month weights saved to {weights_file}")
+    if ksemillerio > len(SEMILLAS):
+        raise ValueError(
+            f"ksemillerio ({ksemillerio}) exceeds available seeds ({len(SEMILLAS)})\n"
+            f"Available seeds: {SEMILLAS}"
+        )
     
-    # Create LightGBM dataset with weights
-    dtrain = lgb.Dataset(X_train, label=y_train, weight=sample_weights,
-                        free_raw_data=False, feature_name=campos_buenos_valid)
-    
-    # Get zLightGBM parameters
-    lgb_params = zlgbm_config["param"].copy()
-    lgb_params["seed"] = config["semilla_primigenia"]
-    
-    print(f"\nzLightGBM parameters:")
-    print(f"  canaritos: {lgb_params['canaritos']}")
-    print(f"  gradient_bound: {lgb_params['gradient_bound']}")
-    print(f"  learning_rate: {lgb_params['learning_rate']}")
-    print(f"  feature_fraction: {lgb_params['feature_fraction']}")
-    print(f"  min_data_in_leaf: {lgb_params['min_data_in_leaf']}")
-    print(f"  num_iterations (max): {lgb_params['num_iterations']}")
-    print(f"  num_leaves (max): {lgb_params['num_leaves']}")
-    
-    # Train model
-    print(f"\n{'='*70}")
-    print("TRAINING MODEL (zLightGBM will stop automatically)")
-    print(f"{'='*70}\n")
-    
-    modelo = lgb.train(
-        lgb_params,
-        dtrain,
-        num_boost_round=lgb_params["num_iterations"]
-    )
-    
-    # Get model info
-    n_trees = modelo.num_trees()
+    semillas_to_use = SEMILLAS[:ksemillerio]
     
     print(f"\n{'='*70}")
-    print("TRAINING COMPLETE")
+    print(f"TRAINING {ksemillerio} MODEL(S) FOR ENSEMBLE")
     print(f"{'='*70}")
-    print(f"  Trees built: {n_trees} (max was {lgb_params['num_iterations']})")
-    print(f"  zLightGBM stopped automatically at {n_trees} trees")
+    print(f"Seeds to use: {semillas_to_use}")
     
-    # Save model
-    experimento = config["experimento"]
-    output_dir = Path(f"output/{experimento}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    model_file = output_dir / "zmodelo.txt"
-    
-    print(f"\nSaving model to {model_file}...")
-    try:
-        modelo.save_model(str(model_file))
+    # Train each model with different seed
+    for i, semilla in enumerate(semillas_to_use, 1):
+        print(f"\n{'='*70}")
+        print(f"MODEL {i}/{ksemillerio} - SEED {semilla}")
+        print(f"{'='*70}")
         
-        # Verify the file was actually created and has content
-        if not model_file.exists():
-            raise IOError(f"Model file was not created: {model_file}")
+        # Set seed for this model
+        np.random.seed(semilla)
         
-        file_size = model_file.stat().st_size
-        if file_size == 0:
-            raise IOError(f"Model file is empty: {model_file}")
+        # Generate random column for undersampling (different for each seed)
+        azar = np.random.uniform(0, 1, df_training_months.shape[0])
+        df_with_azar = df_training_months.with_columns([pl.Series("azar", azar)])
         
-        print(f"✓ Model saved successfully: {file_size / (1024*1024):.2f} MB")
+        # Apply undersampling: keep all positives + random sample of negatives
+        df_train = df_with_azar.filter(
+            (pl.col("clase01") == 1) |  # All positives
+            (pl.col("azar") <= undersampling)  # Random sample of negatives
+        )
         
-    except Exception as e:
-        error_msg = f"CRITICAL ERROR: Failed to save model: {e}"
-        print(f"\n❌ {error_msg}")
-        raise RuntimeError(error_msg) from e
-    
-    # Save tree structure for analysis
-    try:
-        tree_df = modelo.trees_to_dataframe()
-        tree_file = output_dir / "tb_arboles.txt"
-        tree_df.to_csv(tree_file, sep="\t", index=False)
-        print(f"✓ Tree structure saved to {tree_file}")
+        # Extract training data
+        X_train = df_train.select(campos_buenos_valid).to_numpy()
+        y_train = df_train.select("clase01").to_numpy().ravel()
+        months_train = df_train.select("foto_mes").to_numpy().ravel()
         
-        # Analyze tree structure (if leaf_index column exists)
-        if 'leaf_index' in tree_df.columns:
-            leaves_per_tree = tree_df.groupby('tree_index')['leaf_index'].max() + 1
+        print(f"\nTraining data (seed {semilla}):")
+        print(f"  Samples: {X_train.shape[0]:,}")
+        print(f"  Features: {X_train.shape[1]:,} (including {n_canaritos} canaries)")
+        print(f"  Positives: {y_train.sum():,} ({y_train.sum()/len(y_train)*100:.2f}%)")
+        print(f"  Negatives: {len(y_train) - y_train.sum():,}")
+        
+        # Calculate month weights
+        month_weight_strategy = zlgbm_config["train_final"].get("month_weights", "equal")
+        sample_weights = calculate_month_weights(months_train, month_weight_strategy)
+        
+        print(f"\nMonth weighting strategy: {month_weight_strategy}")
+        if month_weight_strategy != "equal":
+            unique_months = np.unique(months_train)
+            unique_months.sort()
+            print(f"  Sample month weights:")
+            for month in unique_months[:2]:  # First 2 months
+                weight = sample_weights[months_train == month][0]
+                print(f"    {month}: {weight:.3f}")
+            print(f"    ...")
+            for month in unique_months[-2:]:  # Last 2 months
+                weight = sample_weights[months_train == month][0]
+                print(f"    {month}: {weight:.3f}")
+        
+        # Save month weights to file (only for first model)
+        if i == 1:
+            weights_file = output_dir / "month_weights.txt"
+            with open(weights_file, 'w') as f:
+                f.write(f"Month Weighting Strategy: {month_weight_strategy}\n")
+                f.write(f"Experiment: {experimento}\n")
+                f.write(f"Ensemble size: {ksemillerio}\n")
+                f.write("="*50 + "\n\n")
+                
+                unique_months_sorted = np.unique(months_train)
+                unique_months_sorted.sort()
+                
+                f.write(f"{'Month':<10} {'Weight':<10} {'Samples':<10}\n")
+                f.write("-"*30 + "\n")
+                
+                for month in unique_months_sorted:
+                    weight = sample_weights[months_train == month][0]
+                    n_samples = (months_train == month).sum()
+                    f.write(f"{month:<10} {weight:<10.4f} {n_samples:<10}\n")
+                
+                f.write("\n" + "="*50 + "\n")
+                f.write("Statistics:\n")
+                f.write(f"  Total samples: {len(sample_weights)}\n")
+                f.write(f"  Unique months: {len(unique_months_sorted)}\n")
+                f.write(f"  Weight range: [{sample_weights.min():.4f}, {sample_weights.max():.4f}]\n")
+                f.write(f"  Mean weight: {sample_weights.mean():.4f}\n")
             
-            print(f"\nTree structure analysis:")
-            print(f"  Total trees: {n_trees}")
-            print(f"  Leaves per tree:")
-            print(f"    Min: {leaves_per_tree.min()}")
-            print(f"    Median: {leaves_per_tree.median():.0f}")
-            print(f"    Mean: {leaves_per_tree.mean():.1f}")
-            print(f"    Max: {leaves_per_tree.max()}")
-        else:
-            print(f"  ℹ Tree structure saved (leaf_index column not available for detailed analysis)")
+            print(f"✓ Month weights saved to {weights_file}")
         
-    except Exception as e:
-        print(f"⚠ Could not save tree structure: {e}")
+        # Create LightGBM dataset with weights
+        dtrain = lgb.Dataset(X_train, label=y_train, weight=sample_weights,
+                            free_raw_data=False, feature_name=campos_buenos_valid)
+        
+        # Get zLightGBM parameters
+        lgb_params = zlgbm_config["param"].copy()
+        lgb_params["seed"] = semilla  # Use ensemble seed, not base seed
+        
+        if i == 1:  # Only print params once
+            print(f"\nzLightGBM parameters:")
+            print(f"  canaritos: {lgb_params['canaritos']}")
+            print(f"  gradient_bound: {lgb_params['gradient_bound']}")
+            print(f"  learning_rate: {lgb_params['learning_rate']}")
+            print(f"  feature_fraction: {lgb_params['feature_fraction']}")
+            print(f"  min_data_in_leaf: {lgb_params['min_data_in_leaf']}")
+            print(f"  num_iterations (max): {lgb_params['num_iterations']}")
+            print(f"  num_leaves (max): {lgb_params['num_leaves']}")
+        
+        # Train model
+        print(f"\nTraining model {i}/{ksemillerio} (seed {semilla})...")
+        print(f"  zLightGBM will stop automatically when overfitting is detected")
+        
+        modelo = lgb.train(
+            lgb_params,
+            dtrain,
+            num_boost_round=lgb_params["num_iterations"]
+        )
+        
+        # Get model info
+        n_trees = modelo.num_trees()
+        
+        print(f"✓ Training complete: {n_trees} trees built (max was {lgb_params['num_iterations']})")
+        
+        # Save model with seed suffix
+        if ksemillerio == 1:
+            model_file = output_dir / "zmodelo.txt"
+        else:
+            model_file = output_dir / f"zmodelo_{semilla}.txt"
+        
+        print(f"  Saving to {model_file}...")
+        try:
+            modelo.save_model(str(model_file))
+            
+            # Verify the file was actually created and has content
+            if not model_file.exists():
+                raise IOError(f"Model file was not created: {model_file}")
+            
+            file_size = model_file.stat().st_size
+            if file_size == 0:
+                raise IOError(f"Model file is empty: {model_file}")
+            
+            print(f"  ✓ Model {i}/{ksemillerio} saved: {file_size / (1024*1024):.2f} MB")
+            
+        except Exception as e:
+            error_msg = f"CRITICAL ERROR: Failed to save model {i}: {e}"
+            print(f"\n❌ {error_msg}")
+            raise RuntimeError(error_msg) from e
+        
+        # Save feature importance for this model
+        try:
+            importance = modelo.feature_importance(importance_type='gain')
+            
+            # Create feature importance DataFrame
+            importance_df = pl.DataFrame({
+                'feature': campos_buenos_valid,
+                'importance': importance,
+                'is_canary': [name.startswith("canarito_") for name in campos_buenos_valid]
+            })
+            
+            # Sort and add metadata
+            importance_df = importance_df.sort('importance', descending=True)
+            importance_df = importance_df.with_row_count(name='rank', offset=1)
+            
+            total_importance = importance_df['importance'].sum()
+            importance_df = importance_df.with_columns([
+                (pl.col('importance') / total_importance * 100).alias('importance_pct'),
+            ])
+            importance_df = importance_df.with_columns([
+                pl.col('importance_pct').cum_sum().alias('importance_cumsum_pct')
+            ])
+            
+            # Save to file
+            if ksemillerio == 1:
+                importance_file = output_dir / "feature_importance.txt"
+            else:
+                importance_file = output_dir / f"feature_importance_{semilla}.txt"
+            
+            importance_df.write_csv(importance_file, separator="\t")
+            print(f"  ✓ Feature importance saved: {len(importance_df)} features")
+            
+            # Canary analysis
+            canary_df = importance_df.filter(pl.col('is_canary'))
+            canary_mean = canary_df['importance'].mean()
+            
+            if canary_mean == 0:
+                print(f"  ✓ Canaries have ZERO importance (no overfitting)")
+            else:
+                real_mean = importance_df.filter(~pl.col('is_canary'))['importance'].mean()
+                ratio = real_mean / canary_mean if canary_mean > 0 else float('inf')
+                print(f"  ⚠ Canary avg importance: {canary_mean:.1f} (ratio real/canary: {ratio:.2f}x)")
+            
+        except Exception as e:
+            print(f"  ⚠ Could not save feature importance: {e}")
+        
+        # Clean up to free memory
+        del X_train, y_train, months_train, sample_weights, dtrain, modelo
+        if 'df_train' in locals():
+            del df_train
+        if 'df_with_azar' in locals():
+            del df_with_azar
     
-    # Feature importance
+    # Final summary
     print(f"\n{'='*70}")
-    print("FEATURE IMPORTANCE ANALYSIS")
+    print(f"ENSEMBLE TRAINING COMPLETED")
     print(f"{'='*70}")
+    print(f"  Models trained: {ksemillerio}")
+    print(f"  Seeds used: {semillas_to_use}")
+    print(f"  Output directory: {output_dir}")
     
-    try:
-        # Get feature importance from model
-        importance = modelo.feature_importance(importance_type='gain')
-        feature_names = campos_buenos_valid
-        
-        print(f"\n  Extracted importance for {len(importance)} features")
-        print(f"  Total importance (gain): {importance.sum():,.1f}")
-        print(f"  Non-zero features: {(importance > 0).sum()}")
-        
-        # Validate we have data
-        if len(importance) == 0 or len(feature_names) == 0:
-            raise ValueError("No feature importance data extracted from model")
-        
-        if len(importance) != len(feature_names):
-            raise ValueError(f"Mismatch: {len(importance)} importance values vs {len(feature_names)} feature names")
-        
-        # Create feature importance DataFrame using Polars
-        importance_df = pl.DataFrame({
-            'feature': feature_names,
-            'importance': importance,
-            'is_canary': [name.startswith("canarito_") for name in feature_names]
-        })
-        
-        print(f"  Created DataFrame with {len(importance_df)} rows")
-        
-        # Sort by importance
-        importance_df = importance_df.sort('importance', descending=True)
-        
-        # Add rank (using with_row_count is the proper way in Polars)
-        importance_df = importance_df.with_row_count(name='rank', offset=1)
-        
-        # Add relative importance (percentage)
-        total_importance = importance_df['importance'].sum()
-        importance_df = importance_df.with_columns([
-            (pl.col('importance') / total_importance * 100).alias('importance_pct'),
-        ])
-        
-        # Add cumulative sum
-        importance_df = importance_df.with_columns([
-            pl.col('importance_pct').cum_sum().alias('importance_cumsum_pct')
-        ])
-        
-        # Validate DataFrame before saving
-        if len(importance_df) == 0:
-            raise ValueError("Feature importance DataFrame is empty after processing")
-        
-        # Save to file
-        importance_file = output_dir / "feature_importance.txt"
-        importance_df.write_csv(importance_file, separator="\t")
-        print(f"\n✓ Feature importance saved to {importance_file} ({len(importance_df)} features)")
-        
-        # Get top features
-        top_features = importance_df.head(20)
-        
-        print(f"\nTop 20 features by importance:")
-        print(f"  {'Rank':<5} {'Feature':<40} {'Importance':>12} {'%':>8} {'Cumsum %':>10}")
-        print(f"  {'-'*80}")
-        for row in top_features.iter_rows(named=True):
-            marker = "🐤" if row['is_canary'] else "  "
-            print(f"  {row['rank']:>3d}. {marker} {row['feature']:<38s} "
-                  f"{row['importance']:>12,.1f} {row['importance_pct']:>7.2f}% "
-                  f"{row['importance_cumsum_pct']:>9.2f}%")
-        
-        # Analyze canary importance
-        canary_df = importance_df.filter(pl.col('is_canary'))
-        real_df = importance_df.filter(~pl.col('is_canary'))
-        
-        print(f"\nCanary analysis:")
-        print(f"  Canary features: {len(canary_df)}")
-        print(f"  Real features: {len(real_df)}")
-        
-        canary_mean = canary_df['importance'].mean()
-        real_mean = real_df['importance'].mean()
-        
-        print(f"  Avg canary importance: {canary_mean:,.1f}")
-        print(f"  Avg real feature importance: {real_mean:,.1f}")
-        
-        # Calculate ratio (handle division by zero)
-        if canary_mean > 0:
-            ratio = real_mean / canary_mean
-            print(f"  Ratio (real/canary): {ratio:.2f}x")
-        else:
-            print(f"  Ratio (real/canary): ∞ (canaries have zero importance)")
-        
-        # Check how many canaries are in top features
-        top_100_canaries = importance_df.head(100).filter(pl.col('is_canary')).shape[0]
-        top_200_canaries = importance_df.head(200).filter(pl.col('is_canary')).shape[0]
-        
-        print(f"  Canaries in top 100: {top_100_canaries}")
-        print(f"  Canaries in top 200: {top_200_canaries}")
-        
-        if real_mean > canary_mean:
-            print(f"  ✓ Real features are more important than canaries (good!)")
-        else:
-            print(f"  ⚠ Canaries have similar importance to real features (check for overfitting)")
-        
-    except Exception as e:
-        error_msg = f"CRITICAL ERROR in feature importance analysis: {e}"
-        print(f"\n❌ {error_msg}")
-        import traceback
-        traceback.print_exc()
-        raise RuntimeError(error_msg) from e
-    
-    # Final validation: ensure all critical files were created
-    print(f"\n{'='*70}")
-    print("VALIDATION: Checking output files")
-    print(f"{'='*70}")
-    
-    critical_files = {
-        "Model": model_file,
-        "Feature Importance": importance_file,
-        "Month Weights": weights_file
-    }
-    
-    missing_files = []
-    for name, filepath in critical_files.items():
-        if not filepath.exists():
-            missing_files.append(f"{name} ({filepath})")
-            print(f"  ❌ {name}: MISSING")
-        elif filepath.stat().st_size == 0:
-            missing_files.append(f"{name} ({filepath}) - EMPTY")
-            print(f"  ❌ {name}: EMPTY FILE")
-        else:
-            size_mb = filepath.stat().st_size / (1024 * 1024)
-            print(f"  ✓ {name}: {size_mb:.2f} MB")
-    
-    # Check feature importance has actual data (more than just header)
-    importance_lines = importance_file.read_text().strip().split('\n')
-    if len(importance_lines) <= 1:
-        missing_files.append(f"Feature Importance ({importance_file}) - NO DATA (only header)")
-        print(f"  ❌ Feature Importance: NO DATA (only header found)")
+    if ksemillerio > 1:
+        print(f"\n  Model files:")
+        for semilla in semillas_to_use:
+            model_file = output_dir / f"zmodelo_{semilla}.txt"
+            if model_file.exists():
+                size_mb = model_file.stat().st_size / (1024 * 1024)
+                print(f"    - zmodelo_{semilla}.txt ({size_mb:.2f} MB)")
     else:
-        print(f"  ✓ Feature Importance: {len(importance_lines)-1} features")
+        model_file = output_dir / "zmodelo.txt"
+        if model_file.exists():
+            size_mb = model_file.stat().st_size / (1024 * 1024)
+            print(f"  Model file: zmodelo.txt ({size_mb:.2f} MB)")
     
-    if missing_files:
-        error_msg = f"Training validation FAILED. Missing or invalid files:\n" + "\n".join(f"  - {f}" for f in missing_files)
-        print(f"\n❌ {error_msg}")
-        raise RuntimeError(error_msg)
-    
-    print(f"\n✓ All output files validated successfully")
-    
+    print(f"\n✓ All models trained and saved successfully")
     print(f"\n{'='*70}")
-    print("zLightGBM TRAINING COMPLETED SUCCESSFULLY")
+    print("zLightGBM ENSEMBLE TRAINING COMPLETED SUCCESSFULLY")
     print(f"{'='*70}")
 
