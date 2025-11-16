@@ -13,10 +13,12 @@ from tqdm import tqdm
 
 def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) -> pl.DataFrame:
     """
-    Add Random Forest leaf features
+    Add Random Forest leaf features (MEMORY OPTIMIZED VERSION)
     
     Trains a small LightGBM (configured as Random Forest) and creates
     binary features for each tree-leaf combination
+    
+    This version processes periods in chunks and uses streaming to reduce memory
     
     Args:
         df: Input DataFrame
@@ -27,7 +29,7 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
         DataFrame with RF leaf features added
     """
     print("\n" + "="*50)
-    print("ADDING RANDOM FOREST LEAF FEATURES")
+    print("ADDING RANDOM FOREST LEAF FEATURES (MEMORY OPTIMIZED)")
     print("="*50)
     
     # Create binary target
@@ -61,6 +63,9 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     print(f"Training shape: {X_train.shape}")
     print(f"Number of positives: {y_train.sum()}")
     
+    # Free memory
+    del df_train
+    
     # Train Random Forest (LightGBM configured as RF)
     print("Training Random Forest...")
     dtrain = lgb.Dataset(X_train, label=y_train, free_raw_data=False)
@@ -77,6 +82,9 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     
     print("Random Forest trained successfully")
     
+    # Free training data
+    del X_train, y_train, dtrain
+    
     # Save model (experiment-specific path)
     print("Saving model...")
     experimento = config["experimento"]
@@ -86,72 +94,86 @@ def add_rf_features(df: pl.DataFrame, config: Dict, campos_buenos: List[str]) ->
     # Get unique periods
     periodos = df.select("foto_mes").unique().sort("foto_mes").to_series().to_list()
     
-    # Process each period
-    print(f"Processing {len(periodos)} periods...")
+    # =========================================================================
+    # MEMORY OPTIMIZATION: Process and join period by period (streaming)
+    # =========================================================================
+    print(f"\nProcessing {len(periodos)} periods (streaming mode for memory efficiency)...")
     
-    # Create a list to store all new leaf features
-    all_rf_features = []
+    # Get all possible RF features from the model (to ensure consistent columns)
+    n_trees = rf_params["num_iterations"]
+    max_leaves = rf_params["num_leaves"]
     
-    for periodo in tqdm(periodos, desc="Processing periods"):
+    print(f"Model info: {n_trees} trees, up to {max_leaves} leaves per tree")
+    
+    # Process each period and join immediately (instead of accumulating)
+    for i, periodo in enumerate(tqdm(periodos, desc="Processing periods")):
         # Get data for this period
         df_periodo = df.filter(pl.col("foto_mes") == periodo)
         X_periodo = df_periodo.select(campos_buenos_valid).to_numpy()
         
-        # Get leaf predictions (which leaf each sample falls into for each tree)
+        # Get leaf predictions
         leaf_preds = modelo.predict(X_periodo, pred_leaf=True)
+        n_samples, n_trees_actual = leaf_preds.shape
         
-        # leaf_preds shape: (n_samples, n_trees)
-        n_samples, n_trees = leaf_preds.shape
-        
-        # Create binary features for each tree and leaf
+        # Create binary features for this period
         period_features = {}
         
-        for tree_idx in range(n_trees):
+        for tree_idx in range(n_trees_actual):
             tree_leaves = leaf_preds[:, tree_idx]
             unique_leaves = np.unique(tree_leaves)
             
             for leaf_id in unique_leaves:
                 feature_name = f"rf_{tree_idx:03d}_{leaf_id:03d}"
-                # Binary feature: 1 if sample is in this leaf, 0 otherwise
-                period_features[feature_name] = (tree_leaves == leaf_id).astype(np.int32)
+                period_features[feature_name] = (tree_leaves == leaf_id).astype(np.int8)  # int8 to save memory
         
-        # Create a small dataframe with these features
+        # Create small dataframe with these features
         period_df = pl.DataFrame(period_features)
         
-        # Add foto_mes and index for joining
+        # Add row index for this period
         period_df = period_df.with_columns([
-            pl.lit(periodo).alias("foto_mes"),
             pl.Series("_idx", np.arange(n_samples))
         ])
         
-        all_rf_features.append(period_df)
+        # Add index to the portion of df for this period
+        df_periodo_indexed = df_periodo.with_columns([
+            pl.Series("_idx", np.arange(n_samples))
+        ])
+        
+        # Join RF features for this period only
+        df_periodo_with_rf = df_periodo_indexed.join(period_df, on="_idx", how="left")
+        
+        # Drop the index column
+        df_periodo_with_rf = df_periodo_with_rf.drop("_idx")
+        
+        # Update the main dataframe for this period
+        if i == 0:
+            # First period: replace
+            df_result = df_periodo_with_rf
+        else:
+            # Subsequent periods: concatenate
+            # Use diagonal concat to handle different RF features across periods
+            df_result = pl.concat([df_result, df_periodo_with_rf], how="diagonal")
+        
+        # Free memory
+        del df_periodo, X_periodo, leaf_preds, period_features, period_df, df_periodo_indexed, df_periodo_with_rf
     
-    # Concatenate all period features
-    print("Concatenating RF features...")
-    # Use diagonal concat to handle different column sets across periods
-    rf_features_df = pl.concat(all_rf_features, how="diagonal")
-    
-    # Add index to original dataframe for joining
-    df = df.with_columns([
-        pl.int_range(0, pl.count()).over("foto_mes").alias("_idx")
-    ])
-    
-    # Join RF features with original dataframe
-    print("Joining RF features with main dataset...")
-    df = df.join(rf_features_df, on=["foto_mes", "_idx"], how="left")
+    # Replace original dataframe
+    df = df_result
+    del df_result
     
     # Drop temporary columns
-    df = df.drop(["clase01", "entrenamiento", "_idx"])
+    df = df.drop(["clase01", "entrenamiento"])
     
     # Fill NaN values in RF features with 0
     rf_cols = [col for col in df.columns if col.startswith("rf_")]
     if rf_cols:
+        print(f"\nFilling null values in {len(rf_cols)} RF features...")
         df = df.with_columns([
-            pl.col(col).fill_null(0) for col in rf_cols
+            pl.col(col).fill_null(0).cast(pl.Int8) for col in rf_cols  # Cast to int8 to save memory
         ])
     
-    print(f"\nRF features added: {len(rf_cols)} features")
-    print(f"Total columns: {df.shape[1]}")
+    print(f"\n✓ RF features added: {len(rf_cols)} features")
+    print(f"✓ Total columns: {df.shape[1]}")
     
     return df
 

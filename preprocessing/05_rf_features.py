@@ -76,7 +76,7 @@ def main():
     
     try:
         # Input and output paths
-        input_file = "data/advanced_featured_data.parquet"  # Changed from featured_data.parquet
+        input_file = "data/advanced_featured_data.parquet"
         output_file = "data/final_dataset.parquet"
         
         print(f"\nInput:  {input_file}")
@@ -105,7 +105,7 @@ def main():
         
         print(f"Features available: {len(campos_buenos)}")
         
-        # Add RF features
+        # Add RF features (MEMORY OPTIMIZED - processes period by period)
         print_section("STEP 1: GENERATE RF LEAF FEATURES")
         df = add_rf_features(df, RF_CONFIG, campos_buenos)
         
