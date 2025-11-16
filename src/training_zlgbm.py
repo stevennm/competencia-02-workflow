@@ -284,8 +284,25 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     output_dir.mkdir(parents=True, exist_ok=True)
     
     model_file = output_dir / "zmodelo.txt"
-    modelo.save_model(str(model_file))
-    print(f"\n✓ Model saved to {model_file}")
+    
+    print(f"\nSaving model to {model_file}...")
+    try:
+        modelo.save_model(str(model_file))
+        
+        # Verify the file was actually created and has content
+        if not model_file.exists():
+            raise IOError(f"Model file was not created: {model_file}")
+        
+        file_size = model_file.stat().st_size
+        if file_size == 0:
+            raise IOError(f"Model file is empty: {model_file}")
+        
+        print(f"✓ Model saved successfully: {file_size / (1024*1024):.2f} MB")
+        
+    except Exception as e:
+        error_msg = f"CRITICAL ERROR: Failed to save model: {e}"
+        print(f"\n❌ {error_msg}")
+        raise RuntimeError(error_msg) from e
     
     # Save tree structure for analysis
     try:
@@ -294,16 +311,19 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         tree_df.to_csv(tree_file, sep="\t", index=False)
         print(f"✓ Tree structure saved to {tree_file}")
         
-        # Analyze tree structure
-        leaves_per_tree = tree_df.groupby('tree_index')['leaf_index'].max() + 1
-        
-        print(f"\nTree structure analysis:")
-        print(f"  Total trees: {n_trees}")
-        print(f"  Leaves per tree:")
-        print(f"    Min: {leaves_per_tree.min()}")
-        print(f"    Median: {leaves_per_tree.median():.0f}")
-        print(f"    Mean: {leaves_per_tree.mean():.1f}")
-        print(f"    Max: {leaves_per_tree.max()}")
+        # Analyze tree structure (if leaf_index column exists)
+        if 'leaf_index' in tree_df.columns:
+            leaves_per_tree = tree_df.groupby('tree_index')['leaf_index'].max() + 1
+            
+            print(f"\nTree structure analysis:")
+            print(f"  Total trees: {n_trees}")
+            print(f"  Leaves per tree:")
+            print(f"    Min: {leaves_per_tree.min()}")
+            print(f"    Median: {leaves_per_tree.median():.0f}")
+            print(f"    Mean: {leaves_per_tree.mean():.1f}")
+            print(f"    Max: {leaves_per_tree.max()}")
+        else:
+            print(f"  ℹ Tree structure saved (leaf_index column not available for detailed analysis)")
         
     except Exception as e:
         print(f"⚠ Could not save tree structure: {e}")
@@ -341,10 +361,8 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
         # Sort by importance
         importance_df = importance_df.sort('importance', descending=True)
         
-        # Add rank
-        importance_df = importance_df.with_columns([
-            pl.lit(list(range(1, len(importance_df) + 1))).alias('rank')
-        ])
+        # Add rank (using with_row_count is the proper way in Polars)
+        importance_df = importance_df.with_row_count(name='rank', offset=1)
         
         # Add relative importance (percentage)
         total_importance = importance_df['importance'].sum()
