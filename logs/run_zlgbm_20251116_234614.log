@@ -1,0 +1,92 @@
+2025-11-16 23:46:14,338 - INFO - Log file: logs/run_zlgbm_20251116_234614.log
+2025-11-16 23:46:14,338 - INFO - ZLIGHTGBM WORKFLOW - 2025-11-16 23:46:14
+2025-11-16 23:46:14,338 - INFO - ======================================================================
+2025-11-16 23:46:14,338 - INFO - EXPERIMENT CONFIGURATION
+2025-11-16 23:46:14,338 - INFO - ======================================================================
+2025-11-16 23:46:14,338 - INFO - Experiment: comp2_entrega4_202108_under0.05_zero_zlgbm
+2025-11-16 23:46:14,338 - INFO - Seed: 123479
+2025-11-16 23:46:14,339 - INFO - Training months: [201901, 201902, 201903, 201904, 201906, 201907, 201908, 201909, 201911, 201912, 202001, 202002, 202003, 202004, 202005, 202007, 202008, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106]
+2025-11-16 23:46:14,339 - INFO - Future months: [202108]
+2025-11-16 23:46:14,339 - INFO - Undersampling: 0.05
+2025-11-16 23:46:14,339 - INFO - Ensemble models: 1
+2025-11-16 23:46:14,339 - INFO - Canaries: 5
+2025-11-16 23:46:14,339 - INFO - gradient_bound: 0.1
+2025-11-16 23:46:14,339 - INFO - learning_rate: 1.0
+2025-11-16 23:46:14,339 - INFO - feature_fraction: 0.5
+2025-11-16 23:46:14,339 - INFO - min_data_in_leaf: 20
+2025-11-16 23:46:14,339 - INFO - max_bin: 31
+2025-11-16 23:46:14,339 - INFO - num_iterations: 9999
+2025-11-16 23:46:14,339 - INFO - num_leaves: 999
+2025-11-16 23:46:14,339 - INFO - ======================================================================
+2025-11-16 23:46:14,431 - INFO - Bucket: /home/rstevenmartins/buckets/b1/exp
+2025-11-16 23:46:14,431 - INFO - Loading preprocessed data
+2025-11-16 23:46:23,907 - INFO - Loaded: 4,301,644 rows, 2,750 columns
+2025-11-16 23:46:33,385 - INFO - Replacing 24 100% zero columns with nulls:
+2025-11-16 23:46:33,386 - INFO -   - cseguro_vivienda_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - ccajas_depositos_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - cinversion1_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - Master_delinquency_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - ccajas_extracciones_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - cforex_buy_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - ctarjeta_visa_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - Master_Finiciomora_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - cseguro_accidentes_personales_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - cliente_vip_es_outlier
+2025-11-16 23:46:33,386 - INFO -   - cseguro_vivienda_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - ccajas_depositos_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - cinversion1_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - Master_delinquency_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - ccajas_extracciones_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - cforex_buy_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - ctarjeta_visa_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - Master_Finiciomora_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - cseguro_accidentes_personales_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - cliente_vip_outliers_recientes
+2025-11-16 23:46:33,386 - INFO -   - cambio_ccaja_ahorro
+2025-11-16 23:46:33,386 - INFO -   - cambio_ccuenta_corriente
+2025-11-16 23:46:33,386 - INFO -   - cambios_ccaja_ahorro_6m
+2025-11-16 23:46:33,386 - INFO -   - cambios_ccuenta_corriente_6m
+2025-11-16 23:46:33,591 - INFO - Adding canary features
+2025-11-16 23:46:33,592 - INFO - Adding 5 canary features
+2025-11-16 23:46:34,028 - INFO - Added 5 canaries at the beginning of DataFrame
+2025-11-16 23:46:34,029 - INFO - New dataset shape: (4301644, 2755)
+2025-11-16 23:46:34,029 - INFO - Preparing feature list
+2025-11-16 23:46:34,030 - INFO - Total features: 2,752
+2025-11-16 23:46:34,030 - INFO - Canaries: 5
+2025-11-16 23:46:34,030 - INFO - Real features: 2,747
+2025-11-16 23:46:34,030 - INFO - Canaries verified at the beginning of feature list
+2025-11-16 23:46:34,030 - INFO - Training zLightGBM model
+2025-11-16 23:46:34,030 - INFO - Training 1 model(s)
+2025-11-16 23:46:34,030 - INFO - Undersampling: 0.05
+2025-11-16 23:46:34,030 - INFO - Canaries: 5
+2025-11-16 23:46:34,883 - INFO - Seeds: [123479]
+2025-11-16 23:46:34,883 - INFO - Training model 1/1 (seed 123479)
+2025-11-16 23:46:42,087 - INFO - Samples: 232,697, Features: 2,752, Positives: 35,408 (15.22%)
+2025-11-16 23:46:42,110 - INFO - Month weighting: equal
+2025-11-16 23:46:42,192 - INFO - Month weights saved to output/comp2_entrega4_202108_under0.05_zero_zlgbm/month_weights.txt
+2025-11-17 00:19:59,612 - INFO - Model 1/1 trained: 1486 trees
+2025-11-17 00:19:59,942 - INFO - Model saved: 120.02 MB
+2025-11-17 00:19:59,951 - INFO - Feature importance saved: 2752 features
+2025-11-17 00:19:59,951 - INFO - Canaries have ZERO importance
+2025-11-17 00:20:00,092 - INFO - Training completed: 1 model(s) saved to output/comp2_entrega4_202108_under0.05_zero_zlgbm
+2025-11-17 00:20:00,560 - INFO - Scoring future data
+2025-11-17 00:20:00,626 - INFO - Future data: 164,822 records from [202108]
+2025-11-17 00:20:00,626 - INFO - Loading 1 model(s)
+2025-11-17 00:20:07,963 - INFO - Model 1/1: min=0.000000, max=1.000000
+2025-11-17 00:20:08,134 - INFO - Predictions saved to output/comp2_entrega4_202108_under0.05_zero_zlgbm/prediccion.txt
+2025-11-17 00:20:08,140 - INFO - Scored 164,822 predictions
+2025-11-17 00:20:08,141 - INFO - Min: 0.000000, Max: 1.000000, Mean: 0.037047
+2025-11-17 00:20:08,141 - INFO - Generating Kaggle submission
+2025-11-17 00:20:08,163 - INFO - Submission: 11,000 positives, cutoff prob=0.010212
+2025-11-17 00:20:08,163 - INFO - Submission: output/kaggle/KAcomp2_entrega4_202108_under0.05_zero_zlgbm_11000.csv
+2025-11-17 00:20:08,163 - INFO - Syncing to bucket
+2025-11-17 00:20:08,163 - INFO - ======================================================================
+2025-11-17 00:20:08,163 - INFO - SYNCING TO BUCKET
+2025-11-17 00:20:08,163 - INFO - ======================================================================
+2025-11-17 00:20:13,801 - INFO - ✓ Copied to bucket: output/comp2_entrega4_202108_under0.05_zero_zlgbm → /home/rstevenmartins/buckets/b1/exp/comp2_entrega4_202108_under0.05_zero_zlgbm
+2025-11-17 00:20:13,801 - INFO - ======================================================================
+2025-11-17 00:20:13,801 - INFO - BUCKET SYNC COMPLETE
+2025-11-17 00:20:13,801 - INFO - ======================================================================
+2025-11-17 00:20:13,801 - INFO - WORKFLOW COMPLETED - 00h 33m 59s
+2025-11-17 00:20:13,801 - INFO - Experiment: comp2_entrega4_202108_under0.05_zero_zlgbm
+2025-11-17 00:20:13,801 - INFO - Output: output/comp2_entrega4_202108_under0.05_zero_zlgbm/
