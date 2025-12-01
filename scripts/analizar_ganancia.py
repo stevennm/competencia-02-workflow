@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # CONFIGURACION - CAMBIA ESTO
 # ============================================================================
 
-EXPERIMENTO = "comp2_entrega4_test202106_under0.05_zero_zlgbm"                       # Nombre del experimento
+EXPERIMENTO = "comp3_exp1_test202106_zlgbm"                       # Nombre del experimento
 TARGET_FILE = "data/competencia_02_target.parquet"             # Archivo con labels reales
 MES_COMPARAR = 202106                                          # Mes contra el que comparar
 GAIN_BAJA2 = 780000                                            # Ganancia por BAJA+2

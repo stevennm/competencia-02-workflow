@@ -158,16 +158,9 @@ def train_zlgbm_final_model(df: pl.DataFrame, config: Dict, campos_buenos: List[
     output_dir = Path(f"output/{experimento}")
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Predefined seeds (same as R notebook)
-    SEMILLAS = [123479, 123491, 123493, 123499, 123503]
-    
-    if ksemillerio > len(SEMILLAS):
-        raise ValueError(
-            f"ksemillerio ({ksemillerio}) exceeds available seeds ({len(SEMILLAS)})\n"
-            f"Available seeds: {SEMILLAS}"
-        )
-    
-    semillas_to_use = SEMILLAS[:ksemillerio]
+    # Generate seeds from semilla_primigenia
+    np.random.seed(config["semilla_primigenia"])
+    semillas_to_use = [np.random.randint(100000, 999999) for _ in range(ksemillerio)]
     logger.info(f"Seeds: {semillas_to_use}")
     
     # Train each model with different seed

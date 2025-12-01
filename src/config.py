@@ -30,11 +30,11 @@ PARAM = {
             201907, 201908, 201909,  201911, 201912,
             202001, 202002, 202003, 202004, 202005,
             202007, 202008, 202009, 202010, 202011, 202012,
-            202101, 202102, 202103, 202104 #, 202105, 202106
+            202101, 202102, 202103, 202104, 202105, 202106, 202107
             ], # From notebook
-            "future": [202106],
-            "undersampling": 0.05,  # Conservative (50%)
-            "ksemillerio": 1,  # Only 1 model (zLightGBM is robust enough)
+            "future": [202109],
+            "undersampling": 0.1,  # Conservative (50%)
+            "ksemillerio": 30,  # Only 1 model (zLightGBM is robust enough)
             
             # Month weighting strategy
             "month_weights": "equal",  # Options: "equal", "step", "linear", "exponential"
