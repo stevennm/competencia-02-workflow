@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "comp2_entrega4_test202106_under0.05_zero",
+    "experimento": "comp3_exp1_test202106",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
