@@ -32,7 +32,7 @@ RF_CONFIG = {
         "run": True,
         
         "train": {
-            "training": [202101, 202102, 202103]  # Last 3 months for training
+            "training": [202102, 202103, 202104]  # Last 3 months for training
         },
         
         "lgb_param": {
