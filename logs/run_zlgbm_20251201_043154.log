@@ -1,0 +1,100 @@
+2025-12-01 04:31:54,535 - INFO - Log file: logs/run_zlgbm_20251201_043154.log
+2025-12-01 04:31:54,535 - INFO - ZLIGHTGBM WORKFLOW - 2025-12-01 04:31:54
+2025-12-01 04:31:54,535 - INFO - ======================================================================
+2025-12-01 04:31:54,535 - INFO - EXPERIMENT CONFIGURATION
+2025-12-01 04:31:54,536 - INFO - ======================================================================
+2025-12-01 04:31:54,536 - INFO - Experiment: comp3_exp1_test202106_zlgbm
+2025-12-01 04:31:54,536 - INFO - Seed: 123479
+2025-12-01 04:31:54,536 - INFO - Training months: [201901, 201902, 201903, 201904, 201906, 201907, 201908, 201909, 201911, 201912, 202001, 202002, 202003, 202004, 202005, 202007, 202008, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104]
+2025-12-01 04:31:54,536 - INFO - Future months: [202106]
+2025-12-01 04:31:54,536 - INFO - Undersampling: 0.05
+2025-12-01 04:31:54,536 - INFO - Ensemble models: 1
+2025-12-01 04:31:54,536 - INFO - Canaries: 5
+2025-12-01 04:31:54,536 - INFO - gradient_bound: 0.1
+2025-12-01 04:31:54,536 - INFO - learning_rate: 1.0
+2025-12-01 04:31:54,536 - INFO - feature_fraction: 0.5
+2025-12-01 04:31:54,536 - INFO - min_data_in_leaf: 20
+2025-12-01 04:31:54,536 - INFO - max_bin: 31
+2025-12-01 04:31:54,536 - INFO - num_iterations: 9999
+2025-12-01 04:31:54,536 - INFO - num_leaves: 999
+2025-12-01 04:31:54,536 - INFO - ======================================================================
+2025-12-01 04:31:54,536 - INFO - Bucket: /home/rstevenmartins/buckets/b1/exp
+2025-12-01 04:31:54,536 - INFO - Loading preprocessed data
+2025-12-01 04:31:59,802 - INFO - Loaded: 4,466,737 rows, 2,750 columns
+2025-12-01 04:32:11,212 - INFO - Replacing 32 100% zero columns with nulls:
+2025-12-01 04:32:11,212 - INFO -   - ctarjeta_visa_descuentos_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ccajeros_propios_descuentos_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - cdescubierto_preacordado_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ccaja_ahorro_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - Visa_Finiciomora_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - Master_status_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - cseguro_auto_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - cplazo_fijo_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ccajas_transacciones_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - cseguro_accidentes_personales_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - cseguro_vida_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - Master_Finiciomora_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ccuenta_corriente_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ccajas_extracciones_es_outlier
+2025-12-01 04:32:11,212 - INFO -   - ctarjeta_visa_descuentos_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - ccajeros_propios_descuentos_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cdescubierto_preacordado_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - ccaja_ahorro_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - Visa_Finiciomora_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - Master_status_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cseguro_auto_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cplazo_fijo_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - ccajas_transacciones_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cseguro_accidentes_personales_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cseguro_vida_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - Master_Finiciomora_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - ccuenta_corriente_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - ccajas_extracciones_outliers_recientes
+2025-12-01 04:32:11,213 - INFO -   - cambio_ccaja_ahorro
+2025-12-01 04:32:11,213 - INFO -   - cambio_ccuenta_corriente
+2025-12-01 04:32:11,213 - INFO -   - cambios_ccaja_ahorro_6m
+2025-12-01 04:32:11,213 - INFO -   - cambios_ccuenta_corriente_6m
+2025-12-01 04:32:11,319 - INFO - Adding canary features
+2025-12-01 04:32:11,319 - INFO - Adding 5 canary features
+2025-12-01 04:32:11,508 - INFO - Added 5 canaries at the beginning of DataFrame
+2025-12-01 04:32:11,508 - INFO - New dataset shape: (4466737, 2755)
+2025-12-01 04:32:11,508 - INFO - Preparing feature list
+2025-12-01 04:32:11,509 - INFO - Total features: 2,752
+2025-12-01 04:32:11,509 - INFO - Canaries: 5
+2025-12-01 04:32:11,509 - INFO - Real features: 2,747
+2025-12-01 04:32:11,509 - INFO - Canaries verified at the beginning of feature list
+2025-12-01 04:32:11,509 - INFO - Training zLightGBM model
+2025-12-01 04:32:11,509 - INFO - Training 1 model(s)
+2025-12-01 04:32:11,509 - INFO - Undersampling: 0.05
+2025-12-01 04:32:11,509 - INFO - Canaries: 5
+2025-12-01 04:32:12,020 - INFO - Seeds: [123479]
+2025-12-01 04:32:12,020 - INFO - Training model 1/1 (seed 123479)
+2025-12-01 04:32:15,350 - INFO - Samples: 212,605, Features: 2,752, Positives: 31,455 (14.80%)
+2025-12-01 04:32:15,357 - INFO - Month weighting: equal
+2025-12-01 04:32:15,376 - INFO - Month weights saved to output/comp3_exp1_test202106_zlgbm/month_weights.txt
+2025-12-01 04:52:24,728 - INFO - Model 1/1 trained: 1286 trees
+2025-12-01 04:52:24,911 - INFO - Model saved: 109.55 MB
+2025-12-01 04:52:24,926 - INFO - Feature importance saved: 2752 features
+2025-12-01 04:52:24,927 - INFO - Canaries have ZERO importance
+2025-12-01 04:52:25,076 - INFO - Training completed: 1 model(s) saved to output/comp3_exp1_test202106_zlgbm
+2025-12-01 04:52:25,311 - INFO - Scoring future data
+2025-12-01 04:52:25,542 - INFO - Future data: 164,313 records from [202106]
+2025-12-01 04:52:25,542 - INFO - Loading 1 model(s)
+2025-12-01 04:52:29,977 - INFO - Model 1/1: min=0.000000, max=1.000000
+2025-12-01 04:52:30,133 - INFO - Predictions saved to output/comp3_exp1_test202106_zlgbm/prediccion.txt
+2025-12-01 04:52:30,135 - INFO - Scored 164,313 predictions
+2025-12-01 04:52:30,135 - INFO - Min: 0.000000, Max: 1.000000, Mean: 0.036898
+2025-12-01 04:52:30,136 - INFO - Generating Kaggle submission
+2025-12-01 04:52:30,153 - INFO - Submission: 11,000 positives, cutoff prob=0.017013
+2025-12-01 04:52:30,153 - INFO - Submission: output/kaggle/KAcomp3_exp1_test202106_zlgbm_11000.csv
+2025-12-01 04:52:30,153 - INFO - Syncing to bucket
+2025-12-01 04:52:30,153 - INFO - ======================================================================
+2025-12-01 04:52:30,153 - INFO - SYNCING TO BUCKET
+2025-12-01 04:52:30,153 - INFO - ======================================================================
+2025-12-01 04:52:35,291 - INFO - ✓ Copied to bucket: output/comp3_exp1_test202106_zlgbm → /home/rstevenmartins/buckets/b1/exp/comp3_exp1_test202106_zlgbm
+2025-12-01 04:52:35,291 - INFO - ======================================================================
+2025-12-01 04:52:35,291 - INFO - BUCKET SYNC COMPLETE
+2025-12-01 04:52:35,291 - INFO - ======================================================================
+2025-12-01 04:52:35,291 - INFO - WORKFLOW COMPLETED - 00h 20m 40s
+2025-12-01 04:52:35,292 - INFO - Experiment: comp3_exp1_test202106_zlgbm
+2025-12-01 04:52:35,292 - INFO - Output: output/comp3_exp1_test202106_zlgbm/
