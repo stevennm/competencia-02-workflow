@@ -7,8 +7,13 @@ All scripts are self-contained and can run independently.
 
 ### Main Scripts (run these):
 
+0. **`00_join_datasets.py`**
+   - Reads: `data/competencia_02_crudo.csv.gz` and `data/competencia_03_crudo.csv.gz`
+   - Creates: `data/competencia_combined.csv.gz`
+   - Concatenates both datasets vertically
+
 1. **`01_generate_clase_ternaria.py`**
-   - Reads: `data/competencia_02_crudo.csv.gz`
+   - Reads: `data/competencia_combined.csv.gz`
    - Creates: `data/competencia_02_target.parquet`
    - Generates the `clase_ternaria` column (CONTINUA, BAJA+1, BAJA+2)
    - **Uses `infer_schema_length=None`** for robust type inference (analyzes entire file)
@@ -66,6 +71,9 @@ python preprocessing/run_all.py
 
 ### Run individual steps:
 ```bash
+# Step 0: Join datasets
+python preprocessing/00_join_datasets.py
+
 # Step 1: Generate clase_ternaria
 python preprocessing/01_generate_clase_ternaria.py
 

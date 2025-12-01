@@ -59,6 +59,7 @@ def main():
     print_section(f"COMPLETE PREPROCESSING PIPELINE - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     print("\nThis will execute the complete preprocessing pipeline:")
+    print("  0. Join competencia_02 and competencia_03 datasets")
     print("  1. Generate clase_ternaria from raw data")
     print("  2. Preprocessing (eliminate features, MICE, IPC)")
     print("  3. Feature Engineering (lags, deltas, trends)")
@@ -67,6 +68,7 @@ def main():
     
     # Define pipeline steps
     steps = [
+        "00_join_datasets.py",
         "01_generate_clase_ternaria.py",
         "02_preprocessing.py",
         "03_feature_engineering.py",

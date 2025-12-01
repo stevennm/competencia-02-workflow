@@ -50,6 +50,7 @@ data/featured_data.parquet
 data/final_dataset.parquet
 data/competencia_02_crudo.csv.gz
 data/*.parquet
+data/*.csv.gz
 
 output/*/modelitos/
 output/modelitos

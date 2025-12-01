@@ -1,6 +1,6 @@
 """
 Step 1: Generate clase_ternaria from raw data
-Reads competencia_02_crudo.csv.gz and creates competencia_02_target.parquet
+Reads competencia_combined.csv.gz and creates competencia_02_target.parquet
 
 IMPORTANT: 
 - Uses infer_schema_length=None for robust type inference
@@ -120,7 +120,7 @@ def main():
     
     try:
         # Input and output paths
-        input_file = "data/competencia_02_crudo.csv.gz"
+        input_file = "data/competencia_combined.csv.gz"
         output_file = "data/competencia_02_target.parquet"
         
         print(f"\nInput:  {input_file}")
