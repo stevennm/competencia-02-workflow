@@ -58,9 +58,9 @@ def score_zlgbm_future_data(df: pl.DataFrame, config: Dict, campos_buenos: List[
     experimento = config["experimento"]
     output_dir = Path(f"output/{experimento}")
     
-    # Predefined seeds (same as training)
-    SEMILLAS = [123479, 123491, 123493, 123499, 123503]
-    semillas_to_use = SEMILLAS[:ksemillerio]
+    # Generate seeds from semilla_primigenia (same as training)
+    np.random.seed(config["semilla_primigenia"])
+    semillas_to_use = [np.random.randint(100000, 999999) for _ in range(ksemillerio)]
     
     all_predictions = []
     
