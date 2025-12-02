@@ -1,0 +1,4 @@
+2025-12-01 05:06:25,173 - INFO - Log file: logs/run_zlgbm_20251201_050625.log
+2025-12-01 05:06:25,173 - INFO - ZLIGHTGBM WORKFLOW - 2025-12-01 05:06:25
+2025-12-01 05:06:25,174 - ERROR - ERROR: Experiment 'comp3_exp1_test202106_zlgbm' already exists at output/comp3_exp1_test202106_zlgbm/
+2025-12-01 05:06:25,174 - ERROR - Change experiment name in config.py or delete the directory

@@ -1,0 +1,268 @@
+2025-12-01 05:07:14,588 - INFO - Log file: logs/run_zlgbm_20251201_050714.log
+2025-12-01 05:07:14,588 - INFO - ZLIGHTGBM WORKFLOW - 2025-12-01 05:07:14
+2025-12-01 05:07:14,588 - INFO - ======================================================================
+2025-12-01 05:07:14,588 - INFO - EXPERIMENT CONFIGURATION
+2025-12-01 05:07:14,588 - INFO - ======================================================================
+2025-12-01 05:07:14,588 - INFO - Experiment: comp3_exp2_predict202109_30semillerio_0.1under_zlgbm
+2025-12-01 05:07:14,589 - INFO - Seed: 123479
+2025-12-01 05:07:14,589 - INFO - Training months: [201901, 201902, 201903, 201904, 201906, 201907, 201908, 201909, 201911, 201912, 202001, 202002, 202003, 202004, 202005, 202007, 202008, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106, 202107]
+2025-12-01 05:07:14,589 - INFO - Future months: [202109]
+2025-12-01 05:07:14,589 - INFO - Undersampling: 0.1
+2025-12-01 05:07:14,589 - INFO - Ensemble models: 30
+2025-12-01 05:07:14,589 - INFO - Canaries: 5
+2025-12-01 05:07:14,589 - INFO - gradient_bound: 0.1
+2025-12-01 05:07:14,589 - INFO - learning_rate: 1.0
+2025-12-01 05:07:14,589 - INFO - feature_fraction: 0.5
+2025-12-01 05:07:14,589 - INFO - min_data_in_leaf: 20
+2025-12-01 05:07:14,589 - INFO - max_bin: 31
+2025-12-01 05:07:14,589 - INFO - num_iterations: 9999
+2025-12-01 05:07:14,589 - INFO - num_leaves: 999
+2025-12-01 05:07:14,589 - INFO - ======================================================================
+2025-12-01 05:07:14,680 - INFO - Bucket: /home/rstevenmartins/buckets/b1/exp
+2025-12-01 05:07:14,680 - INFO - Loading preprocessed data
+2025-12-01 05:07:19,889 - INFO - Loaded: 4,466,737 rows, 2,750 columns
+2025-12-01 05:07:30,167 - INFO - Replacing 32 100% zero columns with nulls:
+2025-12-01 05:07:30,167 - INFO -   - ctarjeta_visa_descuentos_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ccajeros_propios_descuentos_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - cdescubierto_preacordado_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ccaja_ahorro_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - Visa_Finiciomora_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - Master_status_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - cseguro_auto_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - cplazo_fijo_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ccajas_transacciones_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - cseguro_accidentes_personales_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - cseguro_vida_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - Master_Finiciomora_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ccuenta_corriente_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ccajas_extracciones_es_outlier
+2025-12-01 05:07:30,167 - INFO -   - ctarjeta_visa_descuentos_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - ccajeros_propios_descuentos_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cdescubierto_preacordado_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - ccaja_ahorro_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - Visa_Finiciomora_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - Master_status_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cseguro_auto_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cplazo_fijo_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - ccajas_transacciones_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cseguro_accidentes_personales_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cseguro_vida_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - Master_Finiciomora_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - ccuenta_corriente_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - ccajas_extracciones_outliers_recientes
+2025-12-01 05:07:30,167 - INFO -   - cambio_ccaja_ahorro
+2025-12-01 05:07:30,167 - INFO -   - cambio_ccuenta_corriente
+2025-12-01 05:07:30,167 - INFO -   - cambios_ccaja_ahorro_6m
+2025-12-01 05:07:30,168 - INFO -   - cambios_ccuenta_corriente_6m
+2025-12-01 05:07:30,271 - INFO - Adding canary features
+2025-12-01 05:07:30,271 - INFO - Adding 5 canary features
+2025-12-01 05:07:30,453 - INFO - Added 5 canaries at the beginning of DataFrame
+2025-12-01 05:07:30,453 - INFO - New dataset shape: (4466737, 2755)
+2025-12-01 05:07:30,453 - INFO - Preparing feature list
+2025-12-01 05:07:30,454 - INFO - Total features: 2,752
+2025-12-01 05:07:30,454 - INFO - Canaries: 5
+2025-12-01 05:07:30,454 - INFO - Real features: 2,747
+2025-12-01 05:07:30,454 - INFO - Canaries verified at the beginning of feature list
+2025-12-01 05:07:30,454 - INFO - Training zLightGBM model
+2025-12-01 05:07:30,454 - INFO - Training 30 model(s)
+2025-12-01 05:07:30,454 - INFO - Undersampling: 0.1
+2025-12-01 05:07:30,454 - INFO - Canaries: 5
+2025-12-01 05:07:30,967 - INFO - Seeds: [318184, 853049, 900900, 169992, 183843, 109486, 808037, 549969, 663847, 754471, 323374, 570193, 989247, 302861, 373216, 751832, 744265, 879722, 333175, 326175, 563688, 979900, 923020, 237617, 407347, 637890, 580014, 715535, 694965, 924881]
+2025-12-01 05:07:30,967 - INFO - Training model 1/30 (seed 318184)
+2025-12-01 05:07:35,082 - INFO - Samples: 447,254, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 05:07:35,207 - INFO - Month weighting: equal
+2025-12-01 05:07:35,236 - INFO - Month weights saved to output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/month_weights.txt
+2025-12-01 05:46:30,782 - INFO - Model 1/30 trained: 1746 trees
+2025-12-01 05:46:31,106 - INFO - Model saved: 165.10 MB
+2025-12-01 05:46:31,113 - INFO - Feature importance saved: 2752 features
+2025-12-01 05:46:31,114 - INFO - Canaries have ZERO importance
+2025-12-01 05:46:31,380 - INFO - Training model 2/30 (seed 853049)
+2025-12-01 05:46:39,609 - INFO - Samples: 447,053, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 06:24:57,842 - INFO - Model 2/30 trained: 1327 trees
+2025-12-01 06:24:58,113 - INFO - Model saved: 142.42 MB
+2025-12-01 06:24:58,120 - INFO - Feature importance saved: 2752 features
+2025-12-01 06:24:58,120 - INFO - Canaries have ZERO importance
+2025-12-01 06:24:58,361 - INFO - Training model 3/30 (seed 900900)
+2025-12-01 06:25:04,953 - INFO - Samples: 447,352, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 07:03:38,690 - INFO - Model 3/30 trained: 1780 trees
+2025-12-01 07:03:38,984 - INFO - Model saved: 167.89 MB
+2025-12-01 07:03:38,991 - INFO - Feature importance saved: 2752 features
+2025-12-01 07:03:38,992 - INFO - Canaries have ZERO importance
+2025-12-01 07:03:39,220 - INFO - Training model 4/30 (seed 169992)
+2025-12-01 07:03:46,536 - INFO - Samples: 448,249, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 07:41:49,587 - INFO - Model 4/30 trained: 1376 trees
+2025-12-01 07:41:49,842 - INFO - Model saved: 145.37 MB
+2025-12-01 07:41:49,849 - INFO - Feature importance saved: 2752 features
+2025-12-01 07:41:49,849 - INFO - Canaries have ZERO importance
+2025-12-01 07:41:50,089 - INFO - Training model 5/30 (seed 183843)
+2025-12-01 07:41:54,525 - INFO - Samples: 448,241, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 08:20:09,437 - INFO - Model 5/30 trained: 1344 trees
+2025-12-01 08:20:09,780 - INFO - Model saved: 143.53 MB
+2025-12-01 08:20:09,786 - INFO - Feature importance saved: 2752 features
+2025-12-01 08:20:09,787 - INFO - Canaries have ZERO importance
+2025-12-01 08:20:10,049 - INFO - Training model 6/30 (seed 109486)
+2025-12-01 08:20:14,001 - INFO - Samples: 447,128, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 08:59:28,734 - INFO - Model 6/30 trained: 1980 trees
+2025-12-01 08:59:29,084 - INFO - Model saved: 171.22 MB
+2025-12-01 08:59:29,091 - INFO - Feature importance saved: 2752 features
+2025-12-01 08:59:29,092 - INFO - Canaries have ZERO importance
+2025-12-01 08:59:29,376 - INFO - Training model 7/30 (seed 808037)
+2025-12-01 08:59:33,930 - INFO - Samples: 448,508, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 09:39:41,559 - INFO - Model 7/30 trained: 2047 trees
+2025-12-01 09:39:41,867 - INFO - Model saved: 169.98 MB
+2025-12-01 09:39:41,874 - INFO - Feature importance saved: 2752 features
+2025-12-01 09:39:41,874 - INFO - Canaries have ZERO importance
+2025-12-01 09:39:42,124 - INFO - Training model 8/30 (seed 549969)
+2025-12-01 09:39:46,058 - INFO - Samples: 447,123, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 10:17:59,053 - INFO - Model 8/30 trained: 1292 trees
+2025-12-01 10:17:59,298 - INFO - Model saved: 138.37 MB
+2025-12-01 10:17:59,304 - INFO - Feature importance saved: 2752 features
+2025-12-01 10:17:59,305 - INFO - Canaries have ZERO importance
+2025-12-01 10:17:59,546 - INFO - Training model 9/30 (seed 663847)
+2025-12-01 10:18:03,879 - INFO - Samples: 447,556, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 10:55:44,701 - INFO - Model 9/30 trained: 1326 trees
+2025-12-01 10:55:44,959 - INFO - Model saved: 141.40 MB
+2025-12-01 10:55:44,966 - INFO - Feature importance saved: 2752 features
+2025-12-01 10:55:44,966 - INFO - Canaries have ZERO importance
+2025-12-01 10:55:45,241 - INFO - Training model 10/30 (seed 754471)
+2025-12-01 10:55:49,483 - INFO - Samples: 447,762, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 11:35:46,278 - INFO - Model 10/30 trained: 1738 trees
+2025-12-01 11:35:46,621 - INFO - Model saved: 167.43 MB
+2025-12-01 11:35:46,629 - INFO - Feature importance saved: 2752 features
+2025-12-01 11:35:46,629 - INFO - Canaries have ZERO importance
+2025-12-01 11:35:46,899 - INFO - Training model 11/30 (seed 323374)
+2025-12-01 11:35:51,168 - INFO - Samples: 448,465, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 12:14:26,004 - INFO - Model 11/30 trained: 1343 trees
+2025-12-01 12:14:26,288 - INFO - Model saved: 142.61 MB
+2025-12-01 12:14:26,294 - INFO - Feature importance saved: 2752 features
+2025-12-01 12:14:26,294 - INFO - Canaries have ZERO importance
+2025-12-01 12:14:26,559 - INFO - Training model 12/30 (seed 570193)
+2025-12-01 12:14:31,035 - INFO - Samples: 448,052, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 12:53:31,788 - INFO - Model 12/30 trained: 1983 trees
+2025-12-01 12:53:32,109 - INFO - Model saved: 177.20 MB
+2025-12-01 12:53:32,116 - INFO - Feature importance saved: 2752 features
+2025-12-01 12:53:32,117 - INFO - Canaries have ZERO importance
+2025-12-01 12:53:32,329 - INFO - Training model 13/30 (seed 989247)
+2025-12-01 12:53:36,568 - INFO - Samples: 447,417, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 13:32:17,630 - INFO - Model 13/30 trained: 1881 trees
+2025-12-01 13:32:17,919 - INFO - Model saved: 172.86 MB
+2025-12-01 13:32:17,926 - INFO - Feature importance saved: 2752 features
+2025-12-01 13:32:17,926 - INFO - Canaries have ZERO importance
+2025-12-01 13:32:18,130 - INFO - Training model 14/30 (seed 302861)
+2025-12-01 13:32:22,274 - INFO - Samples: 446,997, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 14:10:23,259 - INFO - Model 14/30 trained: 1714 trees
+2025-12-01 14:10:23,550 - INFO - Model saved: 166.12 MB
+2025-12-01 14:10:23,557 - INFO - Feature importance saved: 2752 features
+2025-12-01 14:10:23,557 - INFO - Canaries have ZERO importance
+2025-12-01 14:10:23,818 - INFO - Training model 15/30 (seed 373216)
+2025-12-01 14:10:28,000 - INFO - Samples: 447,805, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 14:49:34,121 - INFO - Model 15/30 trained: 1840 trees
+2025-12-01 14:49:34,478 - INFO - Model saved: 168.28 MB
+2025-12-01 14:49:34,486 - INFO - Feature importance saved: 2752 features
+2025-12-01 14:49:34,486 - INFO - Canaries have ZERO importance
+2025-12-01 14:49:34,781 - INFO - Training model 16/30 (seed 751832)
+2025-12-01 14:49:42,309 - INFO - Samples: 447,976, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 15:29:19,183 - INFO - Model 16/30 trained: 1969 trees
+2025-12-01 15:29:19,530 - INFO - Model saved: 172.04 MB
+2025-12-01 15:29:19,537 - INFO - Feature importance saved: 2752 features
+2025-12-01 15:29:19,538 - INFO - Canaries have ZERO importance
+2025-12-01 15:29:19,785 - INFO - Training model 17/30 (seed 744265)
+2025-12-01 15:29:23,709 - INFO - Samples: 446,886, Features: 2,752, Positives: 37,793 (8.46%)
+2025-12-01 16:07:58,405 - INFO - Model 17/30 trained: 1320 trees
+2025-12-01 16:07:58,621 - INFO - Model saved: 140.57 MB
+2025-12-01 16:07:58,629 - INFO - Feature importance saved: 2752 features
+2025-12-01 16:07:58,630 - INFO - Canaries have ZERO importance
+2025-12-01 16:07:58,851 - INFO - Training model 18/30 (seed 879722)
+2025-12-01 16:08:02,769 - INFO - Samples: 448,483, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 16:48:02,230 - INFO - Model 18/30 trained: 1799 trees
+2025-12-01 16:48:02,500 - INFO - Model saved: 169.62 MB
+2025-12-01 16:48:02,507 - INFO - Feature importance saved: 2752 features
+2025-12-01 16:48:02,508 - INFO - Canaries have ZERO importance
+2025-12-01 16:48:02,724 - INFO - Training model 19/30 (seed 333175)
+2025-12-01 16:48:06,732 - INFO - Samples: 447,752, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 17:28:29,860 - INFO - Model 19/30 trained: 2073 trees
+2025-12-01 17:28:30,184 - INFO - Model saved: 172.34 MB
+2025-12-01 17:28:30,193 - INFO - Feature importance saved: 2752 features
+2025-12-01 17:28:30,193 - INFO - Canaries have ZERO importance
+2025-12-01 17:28:30,460 - INFO - Training model 20/30 (seed 326175)
+2025-12-01 17:28:35,306 - INFO - Samples: 447,868, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 18:06:58,314 - INFO - Model 20/30 trained: 1402 trees
+2025-12-01 18:06:58,580 - INFO - Model saved: 148.46 MB
+2025-12-01 18:06:58,587 - INFO - Feature importance saved: 2752 features
+2025-12-01 18:06:58,587 - INFO - Canaries have ZERO importance
+2025-12-01 18:06:58,825 - INFO - Training model 21/30 (seed 563688)
+2025-12-01 18:07:02,752 - INFO - Samples: 447,225, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 18:47:32,102 - INFO - Model 21/30 trained: 1822 trees
+2025-12-01 18:47:32,404 - INFO - Model saved: 170.46 MB
+2025-12-01 18:47:32,411 - INFO - Feature importance saved: 2752 features
+2025-12-01 18:47:32,412 - INFO - Canaries have ZERO importance
+2025-12-01 18:47:32,669 - INFO - Training model 22/30 (seed 979900)
+2025-12-01 18:47:36,634 - INFO - Samples: 447,519, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 19:27:49,394 - INFO - Model 22/30 trained: 1943 trees
+2025-12-01 19:27:49,755 - INFO - Model saved: 174.22 MB
+2025-12-01 19:27:49,763 - INFO - Feature importance saved: 2752 features
+2025-12-01 19:27:49,763 - INFO - Canaries have ZERO importance
+2025-12-01 19:27:49,981 - INFO - Training model 23/30 (seed 923020)
+2025-12-01 19:27:53,979 - INFO - Samples: 447,109, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 20:08:45,648 - INFO - Model 23/30 trained: 1958 trees
+2025-12-01 20:08:45,957 - INFO - Model saved: 171.21 MB
+2025-12-01 20:08:45,964 - INFO - Feature importance saved: 2752 features
+2025-12-01 20:08:45,965 - INFO - Canaries have ZERO importance
+2025-12-01 20:08:46,178 - INFO - Training model 24/30 (seed 237617)
+2025-12-01 20:08:52,675 - INFO - Samples: 447,329, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-01 20:49:14,503 - INFO - Model 24/30 trained: 2183 trees
+2025-12-01 20:49:14,843 - INFO - Model saved: 178.32 MB
+2025-12-01 20:49:14,851 - INFO - Feature importance saved: 2752 features
+2025-12-01 20:49:14,851 - INFO - Canaries have ZERO importance
+2025-12-01 20:49:15,095 - INFO - Training model 25/30 (seed 407347)
+2025-12-01 20:49:19,587 - INFO - Samples: 448,051, Features: 2,752, Positives: 37,793 (8.43%)
+2025-12-01 21:28:12,214 - INFO - Model 25/30 trained: 1953 trees
+2025-12-01 21:28:12,529 - INFO - Model saved: 170.37 MB
+2025-12-01 21:28:12,537 - INFO - Feature importance saved: 2752 features
+2025-12-01 21:28:12,537 - INFO - Canaries have ZERO importance
+2025-12-01 21:28:12,833 - INFO - Training model 26/30 (seed 637890)
+2025-12-01 21:28:17,793 - INFO - Samples: 447,935, Features: 2,752, Positives: 37,793 (8.44%)
+2025-12-01 22:08:03,870 - INFO - Model 26/30 trained: 1973 trees
+2025-12-01 22:08:04,153 - INFO - Model saved: 168.98 MB
+2025-12-01 22:08:04,161 - INFO - Feature importance saved: 2752 features
+2025-12-01 22:08:04,161 - INFO - Canaries have ZERO importance
+2025-12-01 22:08:04,382 - INFO - Training model 27/30 (seed 580014)
+2025-12-01 22:08:08,159 - INFO - Samples: 449,469, Features: 2,752, Positives: 37,793 (8.41%)
+2025-12-01 22:47:36,797 - INFO - Model 27/30 trained: 1826 trees
+2025-12-01 22:47:37,079 - INFO - Model saved: 168.77 MB
+2025-12-01 22:47:37,086 - INFO - Feature importance saved: 2752 features
+2025-12-01 22:47:37,086 - INFO - Canaries have ZERO importance
+2025-12-01 22:47:37,333 - INFO - Training model 28/30 (seed 715535)
+2025-12-01 22:47:41,683 - INFO - Samples: 448,591, Features: 2,752, Positives: 37,793 (8.42%)
+2025-12-01 23:27:56,909 - INFO - Model 28/30 trained: 1765 trees
+2025-12-01 23:27:57,192 - INFO - Model saved: 169.07 MB
+2025-12-01 23:27:57,199 - INFO - Feature importance saved: 2752 features
+2025-12-01 23:27:57,199 - INFO - Canaries have ZERO importance
+2025-12-01 23:27:57,428 - INFO - Training model 29/30 (seed 694965)
+2025-12-01 23:28:01,697 - INFO - Samples: 446,719, Features: 2,752, Positives: 37,793 (8.46%)
+2025-12-02 00:08:00,078 - INFO - Model 29/30 trained: 1680 trees
+2025-12-02 00:08:00,362 - INFO - Model saved: 166.79 MB
+2025-12-02 00:08:00,370 - INFO - Feature importance saved: 2752 features
+2025-12-02 00:08:00,370 - INFO - Canaries have ZERO importance
+2025-12-02 00:08:00,628 - INFO - Training model 30/30 (seed 924881)
+2025-12-02 00:08:04,537 - INFO - Samples: 447,142, Features: 2,752, Positives: 37,793 (8.45%)
+2025-12-02 00:48:28,893 - INFO - Model 30/30 trained: 1999 trees
+2025-12-02 00:48:29,219 - INFO - Model saved: 170.80 MB
+2025-12-02 00:48:29,226 - INFO - Feature importance saved: 2752 features
+2025-12-02 00:48:29,227 - INFO - Canaries have ZERO importance
+2025-12-02 00:48:29,490 - INFO - Training completed: 30 model(s) saved to output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm
+2025-12-02 00:48:29,508 - INFO - Scoring future data
+2025-12-02 00:48:29,566 - INFO - Future data: 165,093 records from [202109]
+2025-12-02 00:48:29,566 - INFO - Loading 30 model(s)
+2025-12-02 00:48:30,406 - ERROR - ERROR: Model not found: output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/zmodelo_123479.txt
+Train the model first using train_zlgbm_final_model()
+2025-12-02 00:48:30,408 - ERROR - Traceback (most recent call last):
+  File "/home/rstevenmartins/workflow-jueves-python/run_zlgbm.py", line 213, in main
+    df_pred = score_zlgbm_future_data(df, PARAM, campos_buenos)
+  File "/home/rstevenmartins/workflow-jueves-python/src/scoring_zlgbm.py", line 75, in score_zlgbm_future_data
+    raise FileNotFoundError(
+    ...<2 lines>...
+    )
+FileNotFoundError: Model not found: output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/zmodelo_123479.txt
+Train the model first using train_zlgbm_final_model()
+

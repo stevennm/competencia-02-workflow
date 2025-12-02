@@ -1,0 +1,116 @@
+2025-12-02 01:03:11,249 - INFO - Log file: logs/run_zlgbm_20251202_010311.log
+2025-12-02 01:03:11,249 - INFO - ZLIGHTGBM WORKFLOW - 2025-12-02 01:03:11
+2025-12-02 01:03:11,249 - INFO - ======================================================================
+2025-12-02 01:03:11,249 - INFO - EXPERIMENT CONFIGURATION
+2025-12-02 01:03:11,249 - INFO - ======================================================================
+2025-12-02 01:03:11,249 - INFO - Experiment: comp3_exp2_predict202109_30semillerio_0.1under_zlgbm
+2025-12-02 01:03:11,249 - INFO - Seed: 123479
+2025-12-02 01:03:11,249 - INFO - Training months: [201901, 201902, 201903, 201904, 201906, 201907, 201908, 201909, 201911, 201912, 202001, 202002, 202003, 202004, 202005, 202007, 202008, 202009, 202010, 202011, 202012, 202101, 202102, 202103, 202104, 202105, 202106, 202107]
+2025-12-02 01:03:11,250 - INFO - Future months: [202109]
+2025-12-02 01:03:11,250 - INFO - Undersampling: 0.1
+2025-12-02 01:03:11,250 - INFO - Ensemble models: 30
+2025-12-02 01:03:11,250 - INFO - Canaries: 5
+2025-12-02 01:03:11,250 - INFO - gradient_bound: 0.1
+2025-12-02 01:03:11,250 - INFO - learning_rate: 1.0
+2025-12-02 01:03:11,250 - INFO - feature_fraction: 0.5
+2025-12-02 01:03:11,250 - INFO - min_data_in_leaf: 20
+2025-12-02 01:03:11,250 - INFO - max_bin: 31
+2025-12-02 01:03:11,250 - INFO - num_iterations: 9999
+2025-12-02 01:03:11,250 - INFO - num_leaves: 999
+2025-12-02 01:03:11,250 - INFO - ======================================================================
+2025-12-02 01:03:11,350 - INFO - Bucket: /home/rstevenmartins/buckets/b1/exp
+2025-12-02 01:03:11,350 - INFO - Loading preprocessed data
+2025-12-02 01:03:16,585 - INFO - Loaded: 4,466,737 rows, 2,750 columns
+2025-12-02 01:03:26,628 - INFO - Replacing 32 100% zero columns with nulls:
+2025-12-02 01:03:26,629 - INFO -   - ctarjeta_visa_descuentos_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ccajeros_propios_descuentos_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - cdescubierto_preacordado_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ccaja_ahorro_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - Visa_Finiciomora_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - Master_status_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - cseguro_auto_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - cplazo_fijo_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ccajas_transacciones_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - cseguro_accidentes_personales_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - cseguro_vida_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - Master_Finiciomora_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ccuenta_corriente_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ccajas_extracciones_es_outlier
+2025-12-02 01:03:26,629 - INFO -   - ctarjeta_visa_descuentos_outliers_recientes
+2025-12-02 01:03:26,629 - INFO -   - ccajeros_propios_descuentos_outliers_recientes
+2025-12-02 01:03:26,629 - INFO -   - cdescubierto_preacordado_outliers_recientes
+2025-12-02 01:03:26,629 - INFO -   - ccaja_ahorro_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - Visa_Finiciomora_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - Master_status_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - cseguro_auto_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - cplazo_fijo_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - ccajas_transacciones_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - cseguro_accidentes_personales_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - cseguro_vida_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - Master_Finiciomora_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - ccuenta_corriente_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - ccajas_extracciones_outliers_recientes
+2025-12-02 01:03:26,631 - INFO -   - cambio_ccaja_ahorro
+2025-12-02 01:03:26,631 - INFO -   - cambio_ccuenta_corriente
+2025-12-02 01:03:26,631 - INFO -   - cambios_ccaja_ahorro_6m
+2025-12-02 01:03:26,631 - INFO -   - cambios_ccuenta_corriente_6m
+2025-12-02 01:03:26,734 - INFO - Adding canary features
+2025-12-02 01:03:26,734 - INFO - Adding 5 canary features
+2025-12-02 01:03:26,916 - INFO - Added 5 canaries at the beginning of DataFrame
+2025-12-02 01:03:26,916 - INFO - New dataset shape: (4466737, 2755)
+2025-12-02 01:03:26,916 - INFO - Preparing feature list
+2025-12-02 01:03:26,917 - INFO - Total features: 2,752
+2025-12-02 01:03:26,917 - INFO - Canaries: 5
+2025-12-02 01:03:26,917 - INFO - Real features: 2,747
+2025-12-02 01:03:26,917 - INFO - Canaries verified at the beginning of feature list
+2025-12-02 01:03:26,917 - INFO - Scoring future data
+2025-12-02 01:03:26,975 - INFO - Future data: 165,093 records from [202109]
+2025-12-02 01:03:26,975 - INFO - Loading 30 model(s)
+2025-12-02 01:03:32,619 - INFO - Model 1/30: min=0.000000, max=1.000000
+2025-12-02 01:03:36,715 - INFO - Model 2/30: min=0.000000, max=1.000000
+2025-12-02 01:03:41,306 - INFO - Model 3/30: min=0.000000, max=1.000000
+2025-12-02 01:03:45,380 - INFO - Model 4/30: min=0.000000, max=1.000000
+2025-12-02 01:03:49,573 - INFO - Model 5/30: min=0.000000, max=1.000000
+2025-12-02 01:03:55,076 - INFO - Model 6/30: min=0.000000, max=1.000000
+2025-12-02 01:04:00,879 - INFO - Model 7/30: min=0.000000, max=1.000000
+2025-12-02 01:04:04,852 - INFO - Model 8/30: min=0.000000, max=1.000000
+2025-12-02 01:04:08,857 - INFO - Model 9/30: min=0.000000, max=1.000000
+2025-12-02 01:04:13,551 - INFO - Model 10/30: min=0.000000, max=1.000000
+2025-12-02 01:04:17,466 - INFO - Model 11/30: min=0.000000, max=1.000000
+2025-12-02 01:04:22,280 - INFO - Model 12/30: min=0.000000, max=1.000000
+2025-12-02 01:04:27,126 - INFO - Model 13/30: min=0.000000, max=1.000000
+2025-12-02 01:04:31,893 - INFO - Model 14/30: min=0.000000, max=1.000000
+2025-12-02 01:04:36,765 - INFO - Model 15/30: min=0.000000, max=1.000000
+2025-12-02 01:04:41,801 - INFO - Model 16/30: min=0.000000, max=1.000000
+2025-12-02 01:04:45,722 - INFO - Model 17/30: min=0.000000, max=0.999999
+2025-12-02 01:04:50,513 - INFO - Model 18/30: min=0.000000, max=1.000000
+2025-12-02 01:04:55,442 - INFO - Model 19/30: min=0.000000, max=1.000000
+2025-12-02 01:04:59,487 - INFO - Model 20/30: min=0.000000, max=1.000000
+2025-12-02 01:05:04,329 - INFO - Model 21/30: min=0.000000, max=1.000000
+2025-12-02 01:05:09,221 - INFO - Model 22/30: min=0.000000, max=1.000000
+2025-12-02 01:05:14,297 - INFO - Model 23/30: min=0.000000, max=1.000000
+2025-12-02 01:05:19,545 - INFO - Model 24/30: min=0.000000, max=1.000000
+2025-12-02 01:05:24,615 - INFO - Model 25/30: min=0.000000, max=1.000000
+2025-12-02 01:05:29,668 - INFO - Model 26/30: min=0.000000, max=1.000000
+2025-12-02 01:05:34,610 - INFO - Model 27/30: min=0.000000, max=1.000000
+2025-12-02 01:05:39,460 - INFO - Model 28/30: min=0.000000, max=1.000000
+2025-12-02 01:05:44,020 - INFO - Model 29/30: min=0.000000, max=1.000000
+2025-12-02 01:05:49,220 - INFO - Model 30/30: min=0.000000, max=1.000000
+2025-12-02 01:05:49,263 - INFO - Ensemble averaged: std dev mean=0.005243
+2025-12-02 01:05:49,407 - INFO - Predictions saved to output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/prediccion.txt
+2025-12-02 01:05:49,411 - INFO - Scored 165,093 predictions
+2025-12-02 01:05:49,412 - INFO - Min: 0.000000, Max: 1.000000, Mean: 0.022150
+2025-12-02 01:05:49,412 - INFO - Generating Kaggle submission
+2025-12-02 01:05:49,427 - INFO - Submission: 11,000 positives, cutoff prob=0.001434
+2025-12-02 01:05:49,427 - INFO - Submission: output/kaggle/KAcomp3_exp2_predict202109_30semillerio_0.1under_zlgbm_11000.csv
+2025-12-02 01:05:49,427 - INFO - Syncing to bucket
+2025-12-02 01:05:49,427 - INFO - ======================================================================
+2025-12-02 01:05:49,427 - INFO - SYNCING TO BUCKET
+2025-12-02 01:05:49,427 - INFO - ======================================================================
+2025-12-02 01:07:36,521 - INFO - ✓ Copied to bucket: output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm → /home/rstevenmartins/buckets/b1/exp/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm
+2025-12-02 01:07:36,522 - INFO - ======================================================================
+2025-12-02 01:07:36,522 - INFO - BUCKET SYNC COMPLETE
+2025-12-02 01:07:36,522 - INFO - ======================================================================
+2025-12-02 01:07:36,522 - INFO - WORKFLOW COMPLETED - 00h 04m 25s
+2025-12-02 01:07:36,522 - INFO - Experiment: comp3_exp2_predict202109_30semillerio_0.1under_zlgbm
+2025-12-02 01:07:36,522 - INFO - Output: output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/

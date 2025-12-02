@@ -29,7 +29,7 @@ wheels/
 # Output and database files
 #output/
 #db/
-
+output/comp3_exp2_predict202109_30semillerio_0.1under_zlgbm/*
 # IDE
 .vscode/
 .idea/
