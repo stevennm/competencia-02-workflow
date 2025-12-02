@@ -261,10 +261,10 @@ def add_historical_features(df: pl.DataFrame, cols_lagueables: List[str],
     df = df.sort(["numero_de_cliente", "foto_mes"])
     
     # Add lags
-    df = add_lag_features(df, cols_lagueables, lags=[1, 2])
+    df = add_lag_features(df, cols_lagueables, lags=[1, 2, 3, 6, 12])
     
     # Add deltas
-    df = add_delta_features(df, cols_lagueables, lags=[1, 2])
+    df = add_delta_features(df, cols_lagueables, lags=[1, 2, 3, 6, 12])
     
     # Update cols_lagueables to include lag columns for trend calculation
     cols_for_trends = [col for col in df.columns 

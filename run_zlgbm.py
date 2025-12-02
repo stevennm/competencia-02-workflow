@@ -103,11 +103,11 @@ def main():
     experimento = PARAM['experimento']
     experiment_dir = Path(f"output/{experimento}")
     
-    # if experiment_dir.exists():
-    #     error_msg = f"ERROR: Experiment '{experimento}' already exists at output/{experimento}/"
-    #     logger.error(error_msg)
-    #     logger.error("Change experiment name in config.py or delete the directory")
-    #     raise FileExistsError(error_msg)
+    if experiment_dir.exists():
+        error_msg = f"ERROR: Experiment '{experimento}' already exists at output/{experimento}/"
+        logger.error(error_msg)
+        logger.error("Change experiment name in config.py or delete the directory")
+        raise FileExistsError(error_msg)
     
     # Log experiment configuration
     zlgbm_config = PARAM["zlgbm"]
@@ -203,9 +203,9 @@ def main():
         
         logger.info("Canaries verified at the beginning of feature list")
         
-        # Train model (COMMENTED - using existing models)
-        # logger.info("Training zLightGBM model")
-        # train_zlgbm_final_model(df, PARAM, campos_buenos)
+        # Train model
+        logger.info("Training zLightGBM model")
+        train_zlgbm_final_model(df, PARAM, campos_buenos)
         
         # Score future data
         logger.info("Scoring future data")
