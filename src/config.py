@@ -6,7 +6,7 @@ Configuration file for zLightGBM workflow
 
 PARAM = {
     # Experiment configuration
-    "experimento": "comp3_exp4_predict202109_morelags",
+    "experimento": "comp3_exp5_predict202109_morelags_fixinflation",
     "semilla_primigenia": 123479,
     
     # Bucket configuration (for VM storage)
@@ -33,8 +33,8 @@ PARAM = {
             202101, 202102, 202103, 202104 , 202105, 202106, 202107
             ], # From notebook
             "future": [202109],
-            "undersampling": 0.1,  # Conservative (50%)
-            "ksemillerio": 15,  # Only 1 model (zLightGBM is robust enough)
+            "undersampling": 0.05,  # Conservative (50%)
+            "ksemillerio": 10,  # Only 1 model (zLightGBM is robust enough)
             
             # Month weighting strategy
             "month_weights": "equal",  # Options: "equal", "step", "linear", "exponential"
